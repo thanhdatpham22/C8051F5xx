@@ -1,0 +1,12 @@
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+	SBIT (LEDY, SFR_P2, 0);                 
+	SBIT (LEDG, SFR_P2, 1);
+	SBIT (LEDR, SPR_P2, 2);
+	void PCA0_Init (void);
+	void SYSCLK_Init (void);
+	void PORT_Init (void);
+
+#endif CONFIG_H

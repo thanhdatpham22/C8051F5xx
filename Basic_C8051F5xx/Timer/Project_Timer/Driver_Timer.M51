@@ -1,0 +1,422 @@
+BL51 BANKED LINKER/LOCATER V6.22              04/24/2025  13:39:02  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
+C:\KEIL_V5\C51\BIN\BL51.EXE D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\B
+>> asic_C8051F5xx\Timer\Project_Timer\main.obj, D:\TU BACK UP\CHANGE_DRIVE\Des
+>> ktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Timer_0.obj, D:\TU B
+>> ACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Tim
+>> er\config.obj, D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051
+>> F5xx\Timer\Project_Timer\Timer_1.obj, D:\TU BACK UP\CHANGE_DRIVE\Desktop\Ph
+>> am_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Timer_2.obj, D:\TU BACK UP\
+>> CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Time
+>> r_3.obj TO D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx
+>> \Timer\Project_Timer\Driver_Timer RS (256) PL (68) PW (78)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Proje
+>> ct_Timer\main.obj (MAIN)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Proje
+>> ct_Timer\Timer_0.obj (TIMER_0)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Proje
+>> ct_Timer\config.obj (CONFIG)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Proje
+>> ct_Timer\Timer_1.obj (TIMER_1)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Proje
+>> ct_Timer\Timer_2.obj (TIMER_2)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Proje
+>> ct_Timer\Timer_3.obj (TIMER_3)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C_STARTUP)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C?ULCMP)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C_INIT)
+
+
+LINK MAP OF MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8
+>> 051F5xx\Timer\Project_Timer\Driver_Timer (MAIN)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     0008H     UNIT         ?DT?_DELAY_T0_US?TIMER_0
+            DATA    0010H     0008H     UNIT         ?DT?_DELAY_T1_MS?TIMER_1
+            DATA    0018H     0008H     UNIT         ?DT?_DELAY_T2_MS?TIMER_2
+            DATA    0020H     0008H     UNIT         _DATA_GROUP_
+            DATA    0028H     0004H     UNIT         ?DT?TIMER_0
+            DATA    002CH     0004H     UNIT         ?DT?TIMER_1
+            DATA    0030H     0004H     UNIT         ?DT?TIMER_2
+            DATA    0034H     0004H     UNIT         ?DT?TIMER_3
+            IDATA   0038H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     0001H     UNIT         ?PR?TIMER0_ISR?TIMER_0
+                    0004H     0007H                  *** GAP ***
+            CODE    000BH     0003H     ABSOLUTE     
+            CODE    000EH     000BH     UNIT         ?PR?OSCILLATOR_INIT?CONFI
+>> G
+                    0019H     0002H                  *** GAP ***
+            CODE    001BH     0003H     ABSOLUTE     
+            CODE    001EH     000BH     UNIT         ?PR?WATCH_DOG_INIT?CONFIG
+>> 
+                    0029H     0002H                  *** GAP ***
+            CODE    002BH     0003H     ABSOLUTE     
+BL51 BANKED LINKER/LOCATER V6.22            04/24/2025  13:39:02  PAGE 2
+
+
+            CODE    002EH     0038H     UNIT         ?PR?_DELAY_T1_MS?TIMER_1
+                    0066H     0005H                  *** GAP ***
+            CODE    006BH     0003H     ABSOLUTE     
+            CODE    006EH     008CH     UNIT         ?C_C51STARTUP
+            CODE    00FAH     0049H     UNIT         ?PR?_DELAY_T0_US?TIMER_0
+            CODE    0143H     0038H     UNIT         ?PR?_DELAY_T2_MS?TIMER_2
+            CODE    017BH     0038H     UNIT         ?PR?_DELAY_T3_US?TIMER_3
+            CODE    01B3H     0024H     UNIT         ?PR?TIMER1_ISR?TIMER_1
+            CODE    01D7H     0021H     UNIT         ?PR?TIMER2_ISR?TIMER_2
+            CODE    01F8H     0021H     UNIT         ?PR?TIMER3_ISR?TIMER_3
+            CODE    0219H     001EH     UNIT         ?PR?_CONFIG_TIMER3?TIMER_
+>> 3
+            CODE    0237H     001DH     UNIT         ?PR?MAIN?MAIN
+            CODE    0254H     001CH     UNIT         ?PR?_CONFIG_TIMER2?TIMER_
+>> 2
+            CODE    0270H     0019H     UNIT         ?C_INITSEG
+            CODE    0289H     0015H     UNIT         ?PR?_CONFIG_TIMER1?TIMER_
+>> 1
+            CODE    029EH     0014H     UNIT         ?PR?PORT_INIT?CONFIG
+            CODE    02B2H     0012H     UNIT         ?PR?_CONFIG_TIMER0?TIMER_
+>> 0
+            CODE    02C4H     0011H     UNIT         ?C?LIB_CODE
+
+
+
+OVERLAY MAP OF MODULE:   D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basi
+>> c_C8051F5xx\Timer\Project_Timer\Driver_Timer (MAIN)
+
+
+SEGMENT                              DATA_GROUP 
+  +--> CALLED SEGMENT              START    LENGTH
+--------------------------------------------------
+?C_C51STARTUP                      -----    -----
+  +--> ?PR?MAIN?MAIN
+  +--> ?C_INITSEG
+
+?PR?MAIN?MAIN                      -----    -----
+  +--> ?PR?WATCH_DOG_INIT?CONFIG
+  +--> ?PR?OSCILLATOR_INIT?CONFIG
+  +--> ?PR?PORT_INIT?CONFIG
+  +--> ?PR?_CONFIG_TIMER3?TIMER_3
+  +--> ?PR?_DELAY_T3_US?TIMER_3
+
+?PR?_DELAY_T3_US?TIMER_3           0020H    0008H
+
+
+
+SYMBOL TABLE OF MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basi
+>> c_C8051F5xx\Timer\Project_Timer\Driver_Timer (MAIN)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+  -------         MODULE        MAIN
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  B:00A8H.7       PUBLIC        EA
+  B:00A0H.1       PUBLIC        LEDG
+  C:0237H         PUBLIC        main
+  -------         PROC          MAIN
+  C:0237H         LINE#         14
+  C:0237H         LINE#         15
+  C:0237H         LINE#         16
+  C:023AH         LINE#         17
+  C:023DH         LINE#         18
+  C:0240H         LINE#         22
+BL51 BANKED LINKER/LOCATER V6.22            04/24/2025  13:39:02  PAGE 3
+
+
+  C:0243H         LINE#         23
+  C:0245H         LINE#         24
+  C:0245H         LINE#         25
+  C:0245H         LINE#         26
+  C:0247H         LINE#         27
+  C:0252H         LINE#         29
+  -------         ENDPROC       MAIN
+  -------         ENDMOD        MAIN
+
+  -------         MODULE        TIMER_0
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  C:0003H         PUBLIC        Timer0_ISR
+  D:0028H         SYMBOL        count
+  C:02B2H         PUBLIC        _CONFIG_TIMER0
+  D:0089H         PUBLIC        TMOD
+  D:0088H         PUBLIC        TCON
+  B:00A8H.1       PUBLIC        ET0
+  B:0088H.5       PUBLIC        TF0
+  D:008CH         PUBLIC        TH0
+  D:008AH         PUBLIC        TL0
+  B:0088H.4       PUBLIC        TR0
+  C:00FAH         PUBLIC        _delay_t0_us
+  D:008EH         PUBLIC        CKCON
+  -------         PROC          _CONFIG_TIMER0
+  C:02B2H         LINE#         8
+  C:02B2H         LINE#         9
+  C:02B2H         LINE#         10
+  C:02B5H         LINE#         11
+  C:02B8H         LINE#         12
+  C:02BBH         LINE#         13
+  C:02BEH         LINE#         15
+  C:02C0H         LINE#         16
+  C:02C3H         LINE#         18
+  -------         ENDPROC       _CONFIG_TIMER0
+  -------         PROC          TIMER0_ISR
+  C:0003H         LINE#         20
+  C:0003H         LINE#         25
+  -------         ENDPROC       TIMER0_ISR
+  -------         PROC          _DELAY_T0_US
+  D:0008H         SYMBOL        us
+  -------         DO            
+  D:000CH         SYMBOL        i
+  -------         ENDDO         
+  C:00FAH         LINE#         27
+  C:0102H         LINE#         28
+  C:0102H         LINE#         30
+  C:0105H         LINE#         32
+  C:0124H         LINE#         33
+  C:0124H         LINE#         34
+  C:0126H         LINE#         35
+  C:0129H         LINE#         37
+  C:0140H         LINE#         38
+  C:0142H         LINE#         39
+  -------         ENDPROC       _DELAY_T0_US
+  -------         ENDMOD        TIMER_0
+
+  -------         MODULE        CONFIG
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:00A7H         PUBLIC        SFRPAGE
+  D:00A6H         PUBLIC        P2MDOUT
+  D:00D9H         PUBLIC        PCA0MD
+  D:00C7H         PUBLIC        XBR2
+  C:001EH         PUBLIC        WATCH_DOG_Init
+  D:00D4H         PUBLIC        P0SKIP
+  D:00D5H         PUBLIC        P1SKIP
+BL51 BANKED LINKER/LOCATER V6.22            04/24/2025  13:39:02  PAGE 4
+
+
+  C:029EH         PUBLIC        PORT_Init
+  D:00A1H         PUBLIC        OSCICN
+  C:000EH         PUBLIC        OSCILLATOR_Init
+  -------         PROC          OSCILLATOR_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:000EH         LINE#         4
+  C:000EH         LINE#         5
+  C:000EH         LINE#         6
+  C:0010H         LINE#         7
+  C:0013H         LINE#         8
+  C:0016H         LINE#         9
+  C:0018H         LINE#         10
+  -------         ENDPROC       OSCILLATOR_INIT
+  -------         PROC          PORT_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:029EH         LINE#         12
+  C:029EH         LINE#         13
+  C:029EH         LINE#         14
+  C:02A0H         LINE#         15
+  C:02A3H         LINE#         16
+  C:02A6H         LINE#         17
+  C:02A9H         LINE#         18
+  C:02ACH         LINE#         19
+  C:02AFH         LINE#         20
+  C:02B1H         LINE#         21
+  -------         ENDPROC       PORT_INIT
+  -------         PROC          WATCH_DOG_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:001EH         LINE#         23
+  C:001EH         LINE#         24
+  C:001EH         LINE#         25
+  C:0020H         LINE#         26
+  C:0023H         LINE#         27
+  C:0026H         LINE#         28
+  C:0028H         LINE#         30
+  -------         ENDPROC       WATCH_DOG_INIT
+  -------         ENDMOD        CONFIG
+
+  -------         MODULE        TIMER_1
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  C:01B3H         PUBLIC        TIMER1_ISR
+  D:002CH         SYMBOL        count
+  C:0289H         PUBLIC        _CONFIG_TIMER1
+  D:0089H         PUBLIC        TMOD
+  D:0088H         PUBLIC        TCON
+  B:00A8H.3       PUBLIC        ET1
+  D:008DH         PUBLIC        TH1
+  D:008BH         PUBLIC        TL1
+  C:002EH         PUBLIC        _delay_t1_ms
+  D:008EH         PUBLIC        CKCON
+  -------         PROC          _CONFIG_TIMER1
+  C:0289H         LINE#         6
+  C:0289H         LINE#         7
+  C:0289H         LINE#         8
+  C:028CH         LINE#         9
+  C:028FH         LINE#         10
+  C:0292H         LINE#         12
+  C:0295H         LINE#         13
+  C:0298H         LINE#         14
+BL51 BANKED LINKER/LOCATER V6.22            04/24/2025  13:39:02  PAGE 5
+
+
+  C:029AH         LINE#         15
+  C:029DH         LINE#         16
+  -------         ENDPROC       _CONFIG_TIMER1
+  -------         PROC          TIMER1_ISR
+  C:01B3H         LINE#         18
+  C:01B7H         LINE#         20
+  C:01BAH         LINE#         21
+  C:01BDH         LINE#         22
+  C:01D2H         LINE#         23
+  -------         ENDPROC       TIMER1_ISR
+  -------         PROC          _DELAY_T1_MS
+  D:0010H         SYMBOL        ms
+  -------         DO            
+  D:0014H         SYMBOL        start
+  -------         ENDDO         
+  C:002EH         LINE#         24
+  C:0036H         LINE#         25
+  C:0036H         LINE#         26
+  C:0042H         LINE#         27
+  C:0065H         LINE#         28
+  -------         ENDPROC       _DELAY_T1_MS
+  -------         ENDMOD        TIMER_1
+
+  -------         MODULE        TIMER_2
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  C:01D7H         PUBLIC        TIMER2_ISR
+  D:00A7H         PUBLIC        SFRPAGE
+  D:00CCH         PUBLIC        TMR2
+  D:0030H         SYMBOL        count
+  C:0254H         PUBLIC        _CONFIG_TIMER2
+  D:00C8H         PUBLIC        TMR2CN
+  D:00CAH         PUBLIC        TMR2RL
+  B:00A8H.5       PUBLIC        ET2
+  C:0143H         PUBLIC        _delay_t2_ms
+  D:008EH         PUBLIC        CKCON
+  -------         PROC          _CONFIG_TIMER2
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:0254H         LINE#         6
+  C:0254H         LINE#         7
+  C:0254H         LINE#         8
+  C:0256H         LINE#         9
+  C:0259H         LINE#         10
+  C:0259H         LINE#         11
+  C:025CH         LINE#         13
+  C:0262H         LINE#         14
+  C:0268H         LINE#         15
+  C:026BH         LINE#         16
+  C:026DH         LINE#         17
+  C:026FH         LINE#         19
+  -------         ENDPROC       _CONFIG_TIMER2
+  -------         PROC          TIMER2_ISR
+  C:01D7H         LINE#         21
+  C:01DBH         LINE#         23
+  C:01DEH         LINE#         24
+  C:01F3H         LINE#         25
+  -------         ENDPROC       TIMER2_ISR
+  -------         PROC          _DELAY_T2_MS
+  D:0018H         SYMBOL        ms
+  -------         DO            
+  D:001CH         SYMBOL        start
+  -------         ENDDO         
+  C:0143H         LINE#         27
+  C:014BH         LINE#         28
+BL51 BANKED LINKER/LOCATER V6.22            04/24/2025  13:39:02  PAGE 6
+
+
+  C:014BH         LINE#         29
+  C:0157H         LINE#         30
+  C:017AH         LINE#         31
+  -------         ENDPROC       _DELAY_T2_MS
+  -------         ENDMOD        TIMER_2
+
+  -------         MODULE        TIMER_3
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:00E6H         PUBLIC        EIE1
+  C:01F8H         PUBLIC        TIMER3_ISR
+  D:00A7H         PUBLIC        SFRPAGE
+  D:0094H         PUBLIC        TMR3
+  C:0219H         PUBLIC        _CONFIG_TIMER3
+  D:0091H         PUBLIC        TMR3CN
+  D:0092H         PUBLIC        TMR3RL
+  C:017BH         PUBLIC        _delay_t3_us
+  D:008EH         PUBLIC        CKCON
+  D:0034H         SYMBOL        t3_us_count
+  -------         PROC          _CONFIG_TIMER3
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:0219H         LINE#         6
+  C:0219H         LINE#         7
+  C:0219H         LINE#         8
+  C:021BH         LINE#         9
+  C:021EH         LINE#         11
+  C:0221H         LINE#         12
+  C:0223H         LINE#         13
+  C:0226H         LINE#         15
+  C:022BH         LINE#         16
+  C:0231H         LINE#         18
+  C:0234H         LINE#         19
+  C:0236H         LINE#         20
+  -------         ENDPROC       _CONFIG_TIMER3
+  -------         PROC          TIMER3_ISR
+  C:01F8H         LINE#         21
+  C:01FCH         LINE#         23
+  C:01FFH         LINE#         24
+  C:0214H         LINE#         25
+  -------         ENDPROC       TIMER3_ISR
+  -------         PROC          _DELAY_T3_US
+  D:0020H         SYMBOL        us
+  -------         DO            
+  D:0024H         SYMBOL        start
+  -------         ENDDO         
+  C:017BH         LINE#         26
+  C:0183H         LINE#         27
+  C:0183H         LINE#         28
+  C:018FH         LINE#         29
+  C:01B2H         LINE#         30
+  -------         ENDPROC       _DELAY_T3_US
+  -------         ENDMOD        TIMER_3
+
+  -------         MODULE        ?C?ULCMP
+  C:02C4H         PUBLIC        ?C?ULCMP
+  -------         ENDMOD        ?C?ULCMP
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAY_T0_US?TIMER_0
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_CONFIG_TIMER1?TIMER_1
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+BL51 BANKED LINKER/LOCATER V6.22            04/24/2025  13:39:02  PAGE 7
+
+
+    SEGMENT: ?PR?_DELAY_T1_MS?TIMER_1
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_CONFIG_TIMER2?TIMER_2
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAY_T2_MS?TIMER_2
+
+Program Size: data=57.0 xdata=0 code=709
+LINK/LOCATE RUN COMPLETE.  5 WARNING(S),  0 ERROR(S)

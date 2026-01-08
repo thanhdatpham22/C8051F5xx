@@ -1,0 +1,867 @@
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE CAN
+OBJECT MODULE PLACED IN can.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe can.c DB OE BR INCDIR(c:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          #include "compiler_defs.h"
+   2          #include "C8051F580_defs.h"
+   3          #include "timer.h"
+*** WARNING C323 IN LINE 11 OF timer.h: newline expected, extra characters found
+   4          #include "can.h"
+*** WARNING C323 IN LINE 83 OF can.h: newline expected, extra characters found
+   5          
+   6          /*---------------------------------FLAG---------------------------------------*/
+   7          SEG_DATA U8 Transfer_Mode = 0x00U;
+   8          //bit CAN_Error = 0;
+   9          
+  10          SEG_XDATA U8 CAN_Rx_Complete_Flag = 0;
+  11          
+  12          /*---------------------------------BUFFER_DEFINE------------------------------*/
+  13          
+  14          U8 KeyData[4] = {0x00,};
+  15          SEGMENT_VARIABLE (CAN_Rx_Buf[8], U8, SEG_XDATA);
+  16          SEGMENT_VARIABLE (CAN_Tx_Buf[8], U8, SEG_XDATA);
+  17          
+  18          
+  19          /*-------------------------FUNTION DEFINE--------------------------------------*/
+  20          
+  21          
+  22          void Can_Init()
+  23          {
+  24   1              U8 SFRPAGE_save = SFRPAGE;
+  25   1              SFRPAGE  = CAN0_PAGE;               // All CAN register are on page 0x0C
+  26   1      
+  27   1              CAN0CN |= 0x01;                     // Start Intialization mode
+  28   1      
+  29   1              //---------Initialize general CAN peripheral settings
+  30   1      
+  31   1              CAN0CN |= 0x4E;                     // Enable Error and Module
+  32   1                                                 // Enable access to bit timing register
+  33   1      
+  34   1              // See the CAN Bit Timing Spreadsheet for how to calculate this value
+  35   1                // CAN0BT = 0x1402;                    // Based on 24 Mhz CAN clock, set the
+  36   1                                                 // CAN bit rate to 1 Mbps
+  37   1              CAN0BT  = 0x3A02U; //bit14-12:
+  38   1           //010 - TSEG1-1, (the time segment before the sample point) 
+  39   1           //bit11-8:
+  40   1           //0011 - TSEG2-1, (the time segment after the sample point)
+  41   1           //bit7-6:
+  42   1           //00 - SJW-1, ((Re)synchronisation jump width)
+  43   1           //bit5-0:
+  44   1           //00101 - BRP-1, (boud rate prescaler)
+  45   1      
+  46   1              //---------Initialize settings for Transmit Message Object 1
+  47   1      
+  48   1              // Command Mask Register
+  49   1              CAN0IF1CM = 0x00F0;                 // Write Operation
+  50   1                                                 // Transfer ID Mask, MDir, MXtd
+  51   1                                                 // Transfer ID, Dir, Xtd, MsgVal
+  52   1                                                 // Transfer Control Bits
+  53   1                                                 // Don't set TxRqst or transfer data
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 2   
+
+  54   1      
+  55   1              // Mask Registers
+  56   1              CAN0IF1M1 = 0x0000;                 // Mask Bits 15-0 not used for filtering
+  57   1              CAN0IF1M2 = 0x5FFC;                 // Ignore Extended Identifier for
+  58   1                                                 // filtering
+  59   1                                                 // Used Direction bit for filtering
+  60   1                                                 // Use ID bits 28-18 for filtering
+  61   1      
+  62   1              // Message Control Registers for TX
+  63   1              CAN0IF1MC = 0x0080 | MESSAGE_SIZE;  // Disable Transmit Interrupt
+  64   1                                                 // Message Object is a Single Message
+  65   1                                                 // Message Size set by #define
+  66   1              // Arbitration Registers
+  67   1              CAN0IF1A1 = 0x0000;                 // 11-bit ID, so lower 16-bits not used
+  68   1      
+  69   1              //---------Initialize settings for Transmit Message Object 1
+  70   1              // Arbitration Registers
+  71   1              CAN0IF1A2 = 0xA000 | (MSG_ID_TX_BL_CMD << 2);  // Set MsgVal to valid
+  72   1                                                             // Set Direction to write
+  73   1                                                             // Set 11-bit Identifier
+  74   1      
+  75   1              CAN0IF1CR = MO_TX_BL_CMD;           // Start command request (0x10 -Message Object 16)
+  76   1      
+  77   1              while (CAN0IF1CRH & 0x80) {}        // Poll on Busy bit
+  78   1      
+  79   1              //---------Initialize settings for Transmit Message Object 2
+  80   1      
+  81   1              // Can use the same settings for this transmit object, so no need reinitalize
+  82   1              // the first five CAN registers again
+  83   1      
+  84   1              // Arbitration Registers
+  85   1              CAN0IF1A2 = 0xA000 | (MSG_ID_TX_BL_WRITE8 << 2);   // Set MsgVal to valid
+  86   1                                                                // Set Direction to write
+  87   1                                                                // Set 11-bit Identifier
+  88   1      
+  89   1              CAN0IF1CR = MO_TX_BL_WRITE8;        // Start command request
+  90   1      
+  91   1              while (CAN0IF1CRH & 0x80) {}           // Poll on Busy bit
+  92   1              //---------Initialize settings for Transmit Message Object
+  93   1      
+  94   1              // Can use the same settings for Receive object, so no need reinitalize the
+  95   1              // first four CAN registers again
+  96   1      
+  97   1      
+  98   1              // Arbitration Registers
+  99   1              CAN0IF1A2 = 0xA000 | (MSG_ID_TX_IGNSW << 2);   // Set MsgVal to valid
+ 100   1                                                             // Set Object Direction to read
+ 101   1                                                             // Set 11-bit Identifier
+ 102   1      
+ 103   1              CAN0IF1CR = MO_TX_CGW1_ID;              // Start command request
+ 104   1      
+ 105   1              while (CAN0IF1CRH & 0x80) {}        // Poll on Busy bit
+ 106   1      
+ 107   1      
+ 108   1              //---------Initialize settings for Receive Message Object
+ 109   1      
+ 110   1              // Can use the same settings for Receive object, so no need reinitalize the
+ 111   1              // first four CAN registers again
+ 112   1      
+ 113   1      
+ 114   1              // Arbitration Registers
+ 115   1              CAN0IF1A2 = 0x8000 | (MSG_ID_RX_BL_RSP << 2);   // Set MsgVal to valid
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 3   
+
+ 116   1                                                             // Set Object Direction to read
+ 117   1                                                             // Set 11-bit Identifier
+ 118   1      
+ 119   1              CAN0IF1CR = MO_RX_BL_RSP;              // Start command request
+ 120   1      
+ 121   1              while (CAN0IF1CRH & 0x80) {}           // Poll on Busy bit
+ 122   1      
+ 123   1              //---------Initialize settings for Transmit Message Object to Diagnotic----------
+ 124   1              //diagnostic
+ 125   1              // CAN TX
+ 126   1      
+ 127   1              CAN0IF1A2 = 0xA000U | (MSG_ID_FUNCTION_REQ << 2U);  // Set MsgVal to valid
+ 128   1      
+ 129   1              CAN0IF1CR = MO_FUNCTION_REQ;                // Start command request
+ 130   1      
+ 131   1              while (CAN0IF1CRH & 0x80) {}           // Poll on Busy bit
+ 132   1      
+ 133   1      
+ 134   1              CAN0IF1A2 = 0xA000U | (MSG_ID_PGS_PHYS_ID << 2U);  // Set MsgVal to valid
+ 135   1      
+ 136   1              CAN0IF1CR = MO_PGS_PHYS_ID;                // Start command request
+ 137   1      
+ 138   1              while (CAN0IF1CRH & 0x80) {}           // Poll on Busy bit
+ 139   1      
+ 140   1              
+ 141   1              // Message Control Registers for RX
+ 142   1              CAN0IF1MC = 0x1480U;
+ 143   1              // Arbitration Registers
+ 144   1              CAN0IF1A2 = 0x8000 | (MSG_ID_RECEIVE_ID << 2);   // Set MsgVal to valid
+ 145   1                                                             // Set Object Direction to read
+ 146   1                                                             // Set 11-bit Identifier
+ 147   1              CAN0IF1CR = MO_RECEIVE_ID;              // Start command request4
+ 148   1      
+ 149   1              while (CAN0IF1CRH & 0x80) {}           // Poll on Busy bit
+ 150   1              //--------- CAN Initalization is complete
+ 151   1      
+ 152   1              CAN0CN &= ~0x41;                    // Return to Normal Mode and disable
+ 153   1                                                 // access to bit timing register
+ 154   1      
+ 155   1      
+ 156   1              //CAN0CN |= 0x80U;//Test Mode Enable
+ 157   1              //CAN0TST = 0x10U;//Loop Back Mode |= 0x10U;     //bit1:
+ 158   1      
+ 159   1              EIE2 |= 0x02;                       // Enable CAN interupts
+ 160   1      
+ 161   1              SFRPAGE = SFRPAGE_save;
+ 162   1      }
+ 163          
+ 164          void CAN0_Send_Message (U8 *buf, U8 msg_obj)
+ 165          {
+ 166   1         // This function assumes that the message object is fully initialized
+ 167   1         // in CAN0_Init and so all it has to do is fill the data registers and
+ 168   1         // initiate transmission
+ 169   1      
+ 170   1         U8 SFRPAGE_save = SFRPAGE;
+ 171   1         SFRPAGE  = CAN0_PAGE;               // All CAN register are on page 0x0C
+ 172   1        
+ 173   1         CAN0IF1DA1H = *buf;                 // Initialize data registers
+ 174   1         CAN0IF1DA1L = *(buf + 1);
+ 175   1         CAN0IF1DA2H = *(buf + 2);
+ 176   1         CAN0IF1DA2L = *(buf + 3);
+ 177   1         CAN0IF1DB1H = *(buf + 4);
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 4   
+
+ 178   1         CAN0IF1DB1L = *(buf + 5);
+ 179   1         CAN0IF1DB2H = *(buf + 6);
+ 180   1         CAN0IF1DB2L = *(buf + 7);
+ 181   1      
+ 182   1         CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 183   1                                             // Write TxRqst, all 8 data bytes
+ 184   1      
+ 185   1         CAN0IF1CR = msg_obj;                // Start command request
+ 186   1      
+ 187   1         while (CAN0IF1CRH & 0x80) {}        // Poll on Busy bit
+ 188   1      
+ 189   1         SFRPAGE = SFRPAGE_save;             // Restore SFRPAGE
+ 190   1      }
+ 191          
+ 192          void SEND_541(U8 IGN_Sw)
+ 193          {
+ 194   1              U8 SFRPAGE_save = SFRPAGE;
+ 195   1              
+ 196   1              EIE2 &= ~(0x02U);
+ 197   1              SFRPAGE  = CAN0_PAGE;               // All CAN register are on page 0x0C
+ 198   1              CAN_Rx_Complete_Flag = 0x00U;
+ 199   1      
+ 200   1              // start bit : 0, length : 3
+ 201   1              CAN0IF1DA1L = (U8)IGN_Sw;          // on message object used
+ 202   1              CAN0IF1DA1H = 0x00;              // Initialize data registers based
+ 203   1              CAN0IF1DA2L = 0x00;
+ 204   1              CAN0IF1DA2H = 0x00;
+ 205   1              CAN0IF1DB1L = 0x00;
+ 206   1              CAN0IF1DB1H = 0x00;
+ 207   1              CAN0IF1DB2L = 0x00;
+ 208   1              CAN0IF1DB2H = 0x00;
+ 209   1      
+ 210   1              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 211   1                                                 // Write TxRqst, all 8 data bytes
+ 212   1      
+ 213   1              CAN0IF1CR = MO_TX_CGW1_ID;            // Start command request
+ 214   1      
+ 215   1              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 216   1      
+ 217   1              //CAN0IF1CM
+ 218   1              SFRPAGE = SFRPAGE_save;
+ 219   1              EIE2 |= 0x02U;
+ 220   1      }
+ 221          
+ 222          U8 SEND_7DF(U8 mode)
+ 223          {
+ 224   1              U8 SFRPAGE_save = SFRPAGE;
+ 225   1              
+ 226   1              EIE2 &= ~(0x02U);
+ 227   1              SFRPAGE  = CAN0_PAGE;               // All CAN register are on page 0x0C
+ 228   1              CAN_Rx_Complete_Flag = 0x00U;
+ 229   1              switch(mode)
+ 230   1              {
+ 231   2                      case STANDARD_MODE:
+ 232   2                              CAN0IF1DA1L = 0x02;          // on message object used
+ 233   2                              CAN0IF1DA1H = 0x10;              // Initialize data registers based
+ 234   2                              CAN0IF1DA2L = 0x81;
+ 235   2                              CAN0IF1DA2H = 0x55;
+ 236   2                              CAN0IF1DB1L = 0x55;
+ 237   2                              CAN0IF1DB1H = 0x55;
+ 238   2                              CAN0IF1DB2L = 0x55;
+ 239   2                              CAN0IF1DB2H = 0x55;
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 5   
+
+ 240   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 241   2                                                                 // Write TxRqst, all 8 data bytes
+ 242   2                              CAN0IF1CR = MO_FUNCTION_REQ;            // Start command request
+ 243   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 244   2                      break;
+ 245   2                      case EXTENDED_MODE:                     
+ 246   2                              CAN0IF1DA1L = 0x02;          // on message object used
+ 247   2                              CAN0IF1DA1H = 0x10;              // Initialize data registers based
+ 248   2                              CAN0IF1DA2L = 0x90;
+ 249   2                              CAN0IF1DA2H = 0x55;
+ 250   2                              CAN0IF1DB1L = 0x55;
+ 251   2                              CAN0IF1DB1H = 0x55;
+ 252   2                              CAN0IF1DB2L = 0x55;
+ 253   2                              CAN0IF1DB2H = 0x55;
+ 254   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 255   2                                                                 // Write TxRqst, all 8 data bytes
+ 256   2                              CAN0IF1CR = MO_FUNCTION_REQ;            // Start command request
+ 257   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 258   2                      break;
+ 259   2                      case CONTROLDTC_OFF:                    
+ 260   2                              CAN0IF1DA1L = 0x02;          // on message object used
+ 261   2                              CAN0IF1DA1H = 0x85;              // Initialize data registers based
+ 262   2                              CAN0IF1DA2L = 0x82;
+ 263   2                              CAN0IF1DA2H = 0x55;
+ 264   2                              CAN0IF1DB1L = 0x55;
+ 265   2                              CAN0IF1DB1H = 0x55;
+ 266   2                              CAN0IF1DB2L = 0x55;
+ 267   2                              CAN0IF1DB2H = 0x55;
+ 268   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 269   2                                                                 // Write TxRqst, all 8 data bytes
+ 270   2                              CAN0IF1CR = MO_FUNCTION_REQ;            // Start command reques
+ 271   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 272   2                      break;
+ 273   2                      case COMM_CONTROL_DISABLE:
+ 274   2                              CAN0IF1DA1L = 0x02;          // on message object used
+ 275   2                              CAN0IF1DA1H = 0x28;              // Initialize data registers based
+ 276   2                              CAN0IF1DA2L = 0x02;
+ 277   2                              CAN0IF1DA2H = 0x55;
+ 278   2                              CAN0IF1DB1L = 0x55;
+ 279   2                              CAN0IF1DB1H = 0x55;
+ 280   2                              CAN0IF1DB2L = 0x55;
+ 281   2                              CAN0IF1DB2H = 0x55;
+ 282   2      
+ 283   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 284   2                                                                 // Write TxRqst, all 8 data bytes
+ 285   2      
+ 286   2                              CAN0IF1CR = MO_FUNCTION_REQ;            // Start command request
+ 287   2      
+ 288   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 289   2                      break;
+ 290   2                      case COMM_CONTROL_ENABLE:                       
+ 291   2                              CAN0IF1DA1L = 0x02;          // on message object used
+ 292   2                              CAN0IF1DA1H = 0x29;              // Initialize data registers based
+ 293   2                              CAN0IF1DA2L = 0x02;
+ 294   2                              CAN0IF1DA2H = 0x55;
+ 295   2                              CAN0IF1DB1L = 0x55;
+ 296   2                              CAN0IF1DB1H = 0x55;
+ 297   2                              CAN0IF1DB2L = 0x55;
+ 298   2                              CAN0IF1DB2H = 0x55;
+ 299   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 300   2                                                                 // Write TxRqst, all 8 data bytes
+ 301   2                              CAN0IF1CR = MO_FUNCTION_REQ;            // Start command reques
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 6   
+
+ 302   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 303   2      
+ 304   2                      case COMM_CONTROL_DISABLE2:                     
+ 305   2                              CAN0IF1DA1L = 0x02;          // on message object used
+ 306   2                              CAN0IF1DA1H = 0x3E;              // Initialize data registers based
+ 307   2                              CAN0IF1DA2L = 0x80;
+ 308   2                              CAN0IF1DA2H = 0x55;
+ 309   2                              CAN0IF1DB1L = 0x55;
+ 310   2                              CAN0IF1DB1H = 0x55;
+ 311   2                              CAN0IF1DB2L = 0x55;
+ 312   2                              CAN0IF1DB2H = 0x55;
+ 313   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 314   2                                                                 // Write TxRqst, all 8 data bytes
+ 315   2                              CAN0IF1CR = MO_FUNCTION_REQ;            // Start command reques
+ 316   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 317   2      
+ 318   2                      break;
+ 319   2                      default:
+ 320   2                      break;
+ 321   2              }
+ 322   1              
+ 323   1              //CAN0IF1CM
+ 324   1              SFRPAGE = SFRPAGE_save;
+ 325   1              EIE2 |= 0x02U;
+ 326   1      }
+*** WARNING C173 IN LINE 326 OF can.c: missing return-expression
+ 327          void SEND_796(U8 mode)
+ 328          {
+ 329   1              U8 SFRPAGE_save = SFRPAGE;
+ 330   1              
+ 331   1              EIE2 &= ~(0x02U);
+ 332   1              SFRPAGE  = CAN0_PAGE;               // All CAN register are on page 0x0C
+ 333   1              CAN_Rx_Complete_Flag = 0x00U;
+ 334   1              switch(mode)
+ 335   1              {
+ 336   2                      case SWVERSION:
+ 337   2                              CAN0IF1DA1L = 0x03;               // on message object used
+ 338   2                              CAN0IF1DA1H = 0x22;              // Initialize data registers based
+ 339   2                              CAN0IF1DA2L = 0xF1;
+ 340   2                              CAN0IF1DA2H = 0x95;
+ 341   2                              CAN0IF1DB1L = 0x55;
+ 342   2                              CAN0IF1DB1H = 0x55;
+ 343   2                              CAN0IF1DB2L = 0x55;
+ 344   2                              CAN0IF1DB2H = 0x55;
+ 345   2      
+ 346   2                              CAN0IF1CM = 0x0087;                      // Set Direction to Write
+ 347   2                                                                              // Write TxRqst, all 8 data bytes
+ 348   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 349   2      
+ 350   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 351   2                      break;
+ 352   2                      case EXTENDED_SESSION:
+ 353   2                              CAN0IF1DA1L = 0x02;          
+ 354   2                              CAN0IF1DA1H = 0x10;              
+ 355   2                              CAN0IF1DA2L = 0x03;
+ 356   2                              CAN0IF1DA2H = 0x55;
+ 357   2                              CAN0IF1DB1L = 0x55;
+ 358   2                              CAN0IF1DB1H = 0x55;
+ 359   2                              CAN0IF1DB2L = 0x55;
+ 360   2                              CAN0IF1DB2H = 0x55;
+ 361   2      
+ 362   2                              CAN0IF1CM = 0x0087;                       // Set Direction to Write
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 7   
+
+ 363   2                                                                               // Write TxRqst, all 8 data bytes
+ 364   2                              CAN0IF1CR = MO_PGS_PHYS_ID;             // Start command request
+ 365   2      
+ 366   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 367   2                      break;
+ 368   2                      case PROGRAMMING_SESSION:
+ 369   2                              CAN0IF1DA1L = 0x02;               // on message object used
+ 370   2                              CAN0IF1DA1H = 0x10;              // Initialize data registers based
+ 371   2                              CAN0IF1DA2L = 0x02;
+ 372   2                              CAN0IF1DA2H = 0x00;
+ 373   2                              CAN0IF1DB1L = 0x00;
+ 374   2                              CAN0IF1DB1H = 0x00;
+ 375   2                              CAN0IF1DB2L = 0x00;
+ 376   2                              CAN0IF1DB2H = 0x00;
+ 377   2      
+ 378   2                              CAN0IF1CM = 0x0087;                     // Set Direction to Write
+ 379   2                                                                              // Write TxRqst, all 8 data bytes
+ 380   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 381   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 382   2                              
+ 383   2                      break;
+ 384   2                      case REQUEST_SEED:
+ 385   2                              CAN0IF1DA1L = 0x02;               // on message object used
+ 386   2                              CAN0IF1DA1H = 0x27;              // Initialize data registers based
+ 387   2                              CAN0IF1DA2L = 0x01;
+ 388   2                              CAN0IF1DA2H = 0x55;
+ 389   2                              CAN0IF1DB1L = 0x55;
+ 390   2                              CAN0IF1DB1H = 0x55;
+ 391   2                              CAN0IF1DB2L = 0x55;
+ 392   2                              CAN0IF1DB2H = 0x55;
+ 393   2      
+ 394   2                              CAN0IF1CM = 0x0087;                      // Set Direction to Write
+ 395   2                                                                              // Write TxRqst, all 8 data bytes
+ 396   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 397   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 398   2                      break;
+ 399   2                      case SEND_KEY:
+ 400   2                              CAN0IF1DA1L = 0x06;               // on message object used
+ 401   2                              CAN0IF1DA1H = 0x27;              // Initialize data registers based
+ 402   2                              CAN0IF1DA2L = 0x02;
+ 403   2                              CAN0IF1DA2H = KeyData[0];//0x00;
+ 404   2                              CAN0IF1DB1L = KeyData[1];//0x00;
+ 405   2                              CAN0IF1DB1H = KeyData[2];//0x00;
+ 406   2                              CAN0IF1DB2L = KeyData[3];//0x00;
+ 407   2                              CAN0IF1DB2H = 0x55;
+ 408   2      
+ 409   2                              CAN0IF1CM = 0x0087;                      // Set Direction to Write
+ 410   2                                                                      // Write TxRqst, all 8 data bytes
+ 411   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 412   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 413   2      
+ 414   2                      break;
+ 415   2                      case ROUTINE_BINARY_UPDATE:
+ 416   2                              CAN0IF1DA1L = 0x05;               // on message object used
+ 417   2                              CAN0IF1DA1H = 0x31;              // Initialize data registers based
+ 418   2                              CAN0IF1DA2L = 0x01;
+ 419   2                              CAN0IF1DA2H = 0xFF;
+ 420   2                              CAN0IF1DB1L = 0x00;
+ 421   2                              CAN0IF1DB1H = 0x01; //update firmware
+ 422   2                              //CAN0IF1DB1H = 0x02; // update turning
+ 423   2                              CAN0IF1DB2L = 0x55;
+ 424   2                              CAN0IF1DB2H = 0x55;
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 8   
+
+ 425   2      
+ 426   2                              CAN0IF1CM = 0x0087;                     // Set Direction to Write
+ 427   2                                                                              // Write TxRqst, all 8 data bytes
+ 428   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 429   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 430   2                      break;
+ 431   2                      case REQUEST_DOWNLOAD_1:
+ 432   2                              
+ 433   2                              CAN0IF1DA1L = 0x10;               // on message object used
+ 434   2                              CAN0IF1DA1H = 0x09;              // Initialize data registers based
+ 435   2                              CAN0IF1DA2L = 0x34;
+ 436   2                              CAN0IF1DA2H = 0x00;
+ 437   2                              CAN0IF1DB1L = 0x33;
+ 438   2                              CAN0IF1DB1H = 0x00;
+ 439   2                              CAN0IF1DB2L = 0x40;
+ 440   2                              CAN0IF1DB2H = 0x00;
+ 441   2      
+ 442   2                              CAN0IF1CM = 0x0087;                     // Set Direction to Write
+ 443   2                                                                              // Write TxRqst, all 8 data bytes
+ 444   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 445   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 446   2                      break;
+ 447   2                      case REQUEST_DOWNLOAD_2:
+ 448   2                              CAN0IF1DA1L = 0x21;          // on message object used
+ 449   2                              CAN0IF1DA1H = 0x01;             // Initialize data registers based
+ 450   2                              CAN0IF1DA2L = 0x3F;
+ 451   2                              CAN0IF1DA2H = 0xF0;
+ 452   2                              CAN0IF1DB1L = 0x55;
+ 453   2                              CAN0IF1DB1H = 0x55;
+ 454   2                              CAN0IF1DB2L = 0x55;
+ 455   2                              CAN0IF1DB2H = 0x55;
+ 456   2      
+ 457   2                              CAN0IF1CM = 0x0087;                      // Set Direction to Write
+ 458   2                                                                              // Write TxRqst, all 8 data bytes
+ 459   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 460   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 461   2      
+ 462   2                      break;
+ 463   2                      case REQUEST_TRANSFER_EXIT:
+ 464   2                              
+ 465   2                              CAN0IF1DA1L = 0x01;               // on message object used
+ 466   2                              CAN0IF1DA1H = 0x37;              // Initialize data registers based
+ 467   2                              CAN0IF1DA2L = 0x55;
+ 468   2                              CAN0IF1DA2H = 0x55;
+ 469   2                              CAN0IF1DB1L = 0x55;
+ 470   2                              CAN0IF1DB1H = 0x55;
+ 471   2                              CAN0IF1DB2L = 0x55;
+ 472   2                              CAN0IF1DB2H = 0x55;
+ 473   2      
+ 474   2                              CAN0IF1CM = 0x0087;                      // Set Direction to Write
+ 475   2                                                                              // Write TxRqst, all 8 data bytes
+ 476   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 477   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 478   2                      break;
+ 479   2                      case ECU_RESET:
+ 480   2                              CAN0IF1DA1L = 0x02;          // on message object used
+ 481   2                              CAN0IF1DA1H = 0x11;             // Initialize data registers based
+ 482   2                              CAN0IF1DA2L = 0x01;
+ 483   2                              CAN0IF1DA2H = 0x55;
+ 484   2                              CAN0IF1DB1L = 0x55;
+ 485   2                              CAN0IF1DB1H = 0x55;
+ 486   2                              CAN0IF1DB2L = 0x55;
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 9   
+
+ 487   2                              CAN0IF1DB2H = 0x55;
+ 488   2      
+ 489   2                              CAN0IF1CM = 0x0087;                      // Set Direction to Write
+ 490   2                                                                              // Write TxRqst, all 8 data bytes
+ 491   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 492   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 493   2      
+ 494   2                      break;
+ 495   2                      case READ_PARTNUMBER:
+ 496   2                              CAN0IF1DA1L = 0x03;          // on message object used
+ 497   2                              CAN0IF1DA1H = 0x22;             // Initialize data registers based
+ 498   2                              CAN0IF1DA2L = 0xF1;
+ 499   2                              CAN0IF1DA2H = 0x87;
+ 500   2                              CAN0IF1DB1L = 0x55;
+ 501   2                              CAN0IF1DB1H = 0x55;
+ 502   2                              CAN0IF1DB2L = 0x55;
+ 503   2                              CAN0IF1DB2H = 0x55;
+ 504   2      
+ 505   2                              CAN0IF1CM = 0x0087;                              // Set Direction to Write
+ 506   2                                                                              // Write TxRqst, all 8 data bytes
+ 507   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 508   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 509   2                      break;
+ 510   2                      case CONTROL_FLOW:
+ 511   2                              CAN0IF1DA1L = 0x30;          // on message object used
+ 512   2                              CAN0IF1DA1H = 0x08;             // Initialize data registers based
+ 513   2                              CAN0IF1DA2L = 0x01;
+ 514   2                              CAN0IF1DA2H = 0x55;
+ 515   2                              CAN0IF1DB1L = 0x55;
+ 516   2                              CAN0IF1DB1H = 0x55;
+ 517   2                              CAN0IF1DB2L = 0x55;
+ 518   2                              CAN0IF1DB2H = 0x55;
+ 519   2      
+ 520   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 521   2                                                                 // Write TxRqst, all 8 data bytes
+ 522   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 523   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 524   2                      break;
+ 525   2                      case FIRST_FARME:
+ 526   2                              CAN0IF1DA1L = 0x10;          // on message object used
+ 527   2                              CAN0IF1DA1H = 0x0C;             // Initialize data registers based
+ 528   2                              CAN0IF1DA2L = 0x3D;
+ 529   2                              CAN0IF1DA2H = 0x4D;
+ 530   2                              CAN0IF1DB1L = 0x43;
+ 531   2                              CAN0IF1DB1H = 0x4E;
+ 532   2                              CAN0IF1DB2L = 0x45;
+ 533   2                              CAN0IF1DB2H = 0x58;
+ 534   2      
+ 535   2                              CAN0IF1CM = 0x0087;                 // Set Direction to Write
+ 536   2                                                                 // Write TxRqst, all 8 data bytes
+ 537   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 538   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 539   2                      break;
+ 540   2                      case CONSECUTIVE:
+ 541   2                              CAN0IF1DA1L = 0x21;          // on message object used
+ 542   2                              CAN0IF1DA1H = 0x57;             // Initialize data registers based
+ 543   2                              CAN0IF1DA2L = 0x52;
+ 544   2                              CAN0IF1DA2H = 0x49;
+ 545   2                              CAN0IF1DB1L = 0x54;
+ 546   2                              CAN0IF1DB1H = 0x45;
+ 547   2                              CAN0IF1DB2L = 0x32;
+ 548   2                              CAN0IF1DB2H = 0x30;
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 10  
+
+ 549   2      
+ 550   2                              CAN0IF1CM = 0x0087;                     // Set Direction to Write
+ 551   2                                                                              // Write TxRqst, all 8 data bytes
+ 552   2                              CAN0IF1CR = MO_PGS_PHYS_ID;            // Start command request
+ 553   2                              while ((CAN0IF1CRH & 0x80U) == 0x80U);          // Poll on Busy bit
+ 554   2                      break;  
+ 555   2                      default:
+ 556   2                      break;
+ 557   2              }
+ 558   1              //CAN0IF1CM
+ 559   1              SFRPAGE = SFRPAGE_save;
+ 560   1              EIE2 |= 0x02U;
+ 561   1      }
+ 562          
+ 563          U8 TGT_Write_Flash(U8 *buf, U16 index, U8 numbytes, U8 Page_Num)
+ 564          {
+ 565   1              U8 i;
+ 566   1              static SEG_XDATA U8 cnt = 0, page = 0xFF;
+ 567   1              SEG_XDATA U8 last_byte = 0x00U;
+ 568   1              U8 SFRPAGE_save = SFRPAGE;
+ 569   1              SFRPAGE = CAN0_PAGE;
+ 570   1              if(page != Page_Num)
+ 571   1              {
+ 572   2                      page = Page_Num;
+ 573   2                      CAN_Tx_Buf[0] = 0xFF;
+ 574   2                      CAN_Tx_Buf[1] = 0x10;
+ 575   2                      CAN_Tx_Buf[2] = Page_Num +1;
+ 576   2                      CAN_Tx_Buf[3] = 0x36;
+ 577   2                      CAN_Tx_Buf[4] = *(buf+1);
+ 578   2                      CAN_Tx_Buf[5] = *(buf+0);
+ 579   2                      CAN_Tx_Buf[6] = *(buf+3);
+ 580   2                      CAN_Tx_Buf[7] = *(buf+2);
+ 581   2                      cnt =0;
+ 582   2              }
+ 583   1              else
+ 584   1              {
+ 585   2                      if ( cnt == 16 )
+ 586   2                      {
+ 587   3                              CAN_Tx_Buf[0] = *(buf+index +0);
+ 588   3                              CAN_Tx_Buf[1] = 0x20;
+ 589   3                              CAN_Tx_Buf[2] = *(buf+index +2);
+ 590   3                              CAN_Tx_Buf[3] = *(buf+index +1);
+ 591   3                              CAN_Tx_Buf[4] = *(buf+index +4);
+ 592   3                              CAN_Tx_Buf[5] = *(buf+index +3);
+ 593   3                              CAN_Tx_Buf[6] = *(buf+index +6);
+ 594   3                              CAN_Tx_Buf[7] = *(buf+index +5);
+ 595   3                              cnt = 0;        
+ 596   3      
+ 597   3                      }
+ 598   2                      else
+ 599   2                      {       
+ 600   3                              CAN_Tx_Buf[0] = *(buf+index +0);
+ 601   3                              CAN_Tx_Buf[1] = cnt+0x20;
+ 602   3                              CAN_Tx_Buf[2] = *(buf+index +2);
+ 603   3                              CAN_Tx_Buf[3] = *(buf+index +1);
+ 604   3                              CAN_Tx_Buf[4] = *(buf+index +4);
+ 605   3                              CAN_Tx_Buf[5] = *(buf+index +3);
+ 606   3                              CAN_Tx_Buf[6] = *(buf+index +6);
+ 607   3                              CAN_Tx_Buf[7] = *(buf+index +5);
+ 608   3                      }
+ 609   2                      if ( numbytes == 4 )
+ 610   2                      {
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 11  
+
+ 611   3                              CAN_Tx_Buf[0] = *(buf+index +0);
+ 612   3                              CAN_Tx_Buf[1] = cnt+0x20;
+ 613   3                              CAN_Tx_Buf[2] = *(buf+index +2);
+ 614   3                              CAN_Tx_Buf[3] = *(buf+index +1);
+ 615   3                              CAN_Tx_Buf[4] = 0x55U;
+ 616   3                              CAN_Tx_Buf[5] = *(buf+index +3);
+ 617   3                              CAN_Tx_Buf[6] = 0x55U;
+ 618   3                              CAN_Tx_Buf[7] = 0x55U;
+ 619   3                      }       
+ 620   2              }
+ 621   1              last_byte++;
+ 622   1              cnt++;
+ 623   1              CAN_Rx_Complete_Flag = 0;
+ 624   1              CAN0_Send_Message (CAN_Tx_Buf, MO_PGS_PHYS_ID);
+ 625   1              SFRPAGE = SFRPAGE_save;
+ 626   1              return CAN_Rx_Buf[0];
+ 627   1      }
+*** WARNING C280 IN LINE 565 OF can.c: 'i': unreferenced local variable
+ 628          
+ 629          INTERRUPT(CAN0_ISR, INTERRUPT_CAN0)
+ 630          {
+ 631   1         static volatile U16 status = 0, Interrupt_ID = 0;
+ 632   1         static volatile U8 reg_val = 0;
+ 633   1         static U8    can_data[8] = {0,0,0,0,0,0,0,0};
+ 634   1      
+ 635   1         SFRPAGE  = CAN0_PAGE;
+ 636   1      
+ 637   1         Interrupt_ID = (U16)CAN0IID;          //Read interrupt ID
+ 638   1      
+ 639   1         if(Interrupt_ID != END)
+ 640   1         {
+ 641   2            if(Interrupt_ID != STATUS_CHANGE)
+ 642   2            {
+ 643   3               // Interrupt handling - status check
+ 644   3               if( (Interrupt_ID == MO_TX_BL_CMD) || (Interrupt_ID == MO_TX_BL_WRITE8) )
+ 645   3               {
+ 646   4                  CAN0IF2CML = 0x18U;  //Clear message interrupt by clearing the Message
+ 647   4                                       //Object's IntPnd bit
+ 648   4                  CAN0IF2CR = Interrupt_ID;  //Read message to IF1 registers 
+ 649   4                  while( 1 )
+ 650   4                              {
+ 651   5                                      reg_val = (U8)CAN0IF2CRH;
+ 652   5                                      if( (reg_val & 0x80U) != 0x80U )
+ 653   5                                      {
+ 654   6                                              break;
+ 655   6                                      }
+ 656   5                              } //Poll on Busy bit
+ 657   4               }
+ 658   3      
+ 659   3                      
+ 660   3                       else if(Interrupt_ID == MO_RX_BL_RSP ) 
+ 661   3               {
+ 662   4                              
+ 663   4                  CAN0IF1CML = 0x7FU;   //Set Command Mask to read, transfer Control
+ 664   4                                       //bits, clear pending interrupt bit and NewDat
+ 665   4                                       //bit, trnsfer data bytes 
+ 666   4                  CAN0IF1CR = Interrupt_ID;  //Read message to IF1 registers 
+ 667   4                  while( 1 )
+ 668   4                              {
+ 669   5                                      reg_val = (U8)CAN0IF1CRH;
+ 670   5                                      if( (reg_val & 0x80U) != 0x80U )
+ 671   5                                      {
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 12  
+
+ 672   6                                              break;
+ 673   6                                      }
+ 674   5                              } //Poll on Busy bit
+ 675   4               
+ 676   4                  status = (U16)CAN0IF1MC;
+ 677   4      
+ 678   4                  if( (status&NEWDATA) == NEWDATA )
+ 679   4                  {
+ 680   5                                      CAN_Rx_Buf[0] = CAN0IF1DA1H;
+ 681   5                                      CAN_Rx_Buf[1] = CAN0IF1DA1L;
+ 682   5                                      CAN_Rx_Buf[2] = CAN0IF1DA2H;
+ 683   5                                      CAN_Rx_Buf[3] = CAN0IF1DA2L;
+ 684   5                                      CAN_Rx_Buf[4] = CAN0IF1DB1H;
+ 685   5                                      CAN_Rx_Buf[5] = CAN0IF1DB1L;
+ 686   5                                      CAN_Rx_Buf[6] = CAN0IF1DB2H;
+ 687   5                                      CAN_Rx_Buf[7] = CAN0IF1DB2L;
+ 688   5      
+ 689   5                                      //CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 690   5      
+ 691   5                                      status = (U16)CAN0IF1A2;
+ 692   5                  }
+ 693   4               }
+ 694   3      
+ 695   3                       else if(Interrupt_ID == MO_RECEIVE_ID ) 
+ 696   3               {
+ 697   4                              
+ 698   4                  CAN0IF1CML = 0x7FU;   //Set Command Mask to read, transfer Control
+ 699   4                                       //bits, clear pending interrupt bit and NewDat
+ 700   4                                       //bit, trnsfer data bytes 
+ 701   4                  CAN0IF1CR = Interrupt_ID;  //Read message to IF1 registers 
+ 702   4                  while( 1 )
+ 703   4                              {
+ 704   5                                      reg_val = (U8)CAN0IF1CRH;
+ 705   5                                      if( (reg_val & 0x80U) != 0x80U )
+ 706   5                                      {
+ 707   6                                              break;
+ 708   6                                      }
+ 709   5                              } //Poll on Busy bit
+ 710   4               
+ 711   4                  status = (U16)CAN0IF1MC;
+ 712   4      
+ 713   4                  if( (status&NEWDATA) == NEWDATA )
+ 714   4                  {
+ 715   5                                      CAN_Rx_Buf[0] = CAN0IF1DA1H;
+ 716   5                                      CAN_Rx_Buf[1] = CAN0IF1DA1L;
+ 717   5                                      CAN_Rx_Buf[2] = CAN0IF1DA2H;
+ 718   5                                      CAN_Rx_Buf[3] = CAN0IF1DA2L;
+ 719   5                                      CAN_Rx_Buf[4] = CAN0IF1DB1H;
+ 720   5                                      CAN_Rx_Buf[5] = CAN0IF1DB1L;
+ 721   5                                      CAN_Rx_Buf[6] = CAN0IF1DB2H;
+ 722   5                                      CAN_Rx_Buf[7] = CAN0IF1DB2L;
+ 723   5                                      
+ 724   5                                      Mode_Complete();
+ 725   5                                      
+ 726   5                                      status = (U16)CAN0IF1A2;
+ 727   5                  }
+ 728   4               }
+ 729   3                       //-------------------------------------------------------------------------------------
+ 730   3            }
+ 731   2            // Status change interrup handling 
+ 732   2            status = (U16)CAN0STAT;
+ 733   2      
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 13  
+
+ 734   2            if( (status & TxOk) == TxOk )
+ 735   2            {
+ 736   3               CAN0STAT &= (U8)(~TxOk);   //Clear TxOk
+ 737   3            }
+ 738   2            if( (status & RxOk) == RxOk )                  
+ 739   2            {
+ 740   3               CAN0STAT &= (U8)(~RxOk);   //Clear TxOk
+ 741   3            }
+ 742   2         }
+ 743   1      
+ 744   1         SFRPAGE  = ACTIVE_PAGE;
+ 745   1      }
+*** WARNING C280 IN LINE 633 OF can.c: 'can_data': unreferenced local variable
+ 746          
+ 747          void Mode_Complete(void)
+ 748          {
+ 749   1              switch(Transfer_Mode)
+ 750   1              {
+ 751   2                      case SWVERSION:
+ 752   2                              if ( CAN_Rx_Buf[0] == 0x62 && CAN_Rx_Buf[3] == 0xF1 )
+ 753   2                              {
+ 754   3                                      CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 755   3                              }       
+ 756   2                      break;
+ 757   2                      case EXTENDED_SESSION:
+ 758   2                              if ( CAN_Rx_Buf[0] == 0x50 && CAN_Rx_Buf[3] == 0x03 )
+ 759   2                              {
+ 760   3                                      CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 761   3                              }       
+ 762   2                      break;
+ 763   2                      case PROGRAMMING_SESSION:
+ 764   2                              if ( CAN_Rx_Buf[0] == 0x50 && CAN_Rx_Buf[3] == 0x02 )
+ 765   2                              {
+ 766   3                                      CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 767   3                              }       
+ 768   2                      break;
+ 769   2                      case CONTROLDTC_OFF:
+ 770   2                              if ( CAN_Rx_Buf[0] == 0xC5 && CAN_Rx_Buf[3] == 0x02 )
+ 771   2                              {
+ 772   3                                      CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 773   3                              }       
+ 774   2                      break;
+ 775   2                      case REQUEST_SEED:
+ 776   2                              if ( CAN_Rx_Buf[0] == 0x67 && CAN_Rx_Buf[3] == 0x01 )
+ 777   2                              {
+ 778   3                                      KeyData[0] = CAN_Rx_Buf[2]+0x10;       
+ 779   3                                      KeyData[1] = CAN_Rx_Buf[5]+0x10;       
+ 780   3                                      KeyData[2] = CAN_Rx_Buf[4]+0x10;       
+ 781   3                                      KeyData[3] = CAN_Rx_Buf[7]+0x10;       
+ 782   3                                      CAN_Rx_Complete_Flag = 1;                       // Indicate Rx Complete
+ 783   3                              }       
+ 784   2                      break;
+ 785   2                      case REQUEST_DOWNLOAD_1:
+ 786   2                      case REQUEST_DOWNLOAD_2:
+ 787   2                              //if ( CAN_Rx_Buf[0] == 0x76 || CAN_Rx_Buf[1] == 0x08 )
+ 788   2                              //{
+ 789   2                                      CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 790   2                              //}     
+ 791   2                      break;
+ 792   2                      case SEND_KEY:
+ 793   2                              if ( CAN_Rx_Buf[0] == 0x67 && CAN_Rx_Buf[3] == 0x02 )
+ 794   2                              {
+C51 COMPILER V9.54   CAN                                                                   04/18/2025 16:51:38 PAGE 14  
+
+ 795   3                                      CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 796   3                              }       
+ 797   2                      break;
+ 798   2                      case ROUTINE_BINARY_UPDATE:
+ 799   2                              if ( CAN_Rx_Buf[0] == 0x71 && CAN_Rx_Buf[3] == 0x01 )
+ 800   2                              {
+ 801   3                                      CAN_Rx_Complete_Flag = 1;       // Indicate Rx Complete
+ 802   3                              }       
+ 803   2                      break;
+ 804   2      
+ 805   2                      default:
+ 806   2                              CAN_Rx_Complete_Flag = 0;
+ 807   2                      break;
+ 808   2              }
+ 809   1      }
+ 810          //-----------------------------------------------------------------------------
+ 811          // End Of File
+ 812          //-----------------------------------------------------------------------------
+*** WARNING C290 IN LINE 326 OF can.c: missing return value
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2370    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     19       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     18       9
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  6 WARNING(S),  0 ERROR(S)

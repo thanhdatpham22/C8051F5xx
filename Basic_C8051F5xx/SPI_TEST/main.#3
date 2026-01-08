@@ -1,0 +1,59 @@
+#include "application.h"
+/*#include <compiler_defs.h>
+#include <C8051F580_defs.h>
+#include "config.h"
+#include "timer.h"
+#include "uart.h"
+#include "can.h"
+
+/*-------------------------------------------------*/
+//#define IGN_SW_ON  0x03
+
+void main()
+{
+	application();
+}
+/*---------------------------------------------------*/
+//U8 crc[2];
+//U16 checksum;
+
+//extern bit UART1_Received_Full;
+//extern SEGMENT_VARIABLE(UART1_Buffer[UART1_BUFFERSIZE], U8, SEG_XDATA);
+//extern U8 UART1_Buffer_Size;
+
+/*-------------------------------------------------*/
+
+//static void CAN_Tx_IGNSw_Process(void);
+/*-------------------------------------------------*/
+/*void main(void)
+{
+   SFRPAGE = ACTIVE_PAGE;
+
+   PCA0_Init();                   
+   PORT_Init();                        
+   SYSCLK_Init ();                     
+   UART1_Init();
+   Timer0_Init();
+   EA = 1;
+   SFRPAGE = ACTIVE2_PAGE;            
+   while (1)
+   {	
+   		
+		 if(UART1_Received_Full == 1)
+		 { 
+			checksum = CRC16_CCITT_FALSE(UART1_Buffer, UART1_Buffer_Size);
+			crc[0] = checksum>>8;
+            crc[1] = checksum;
+			SEND_String(crc,2);
+            UART1_Buffer_Size = 0;
+            UART1_Received_Full = 0;
+		 }
+	}
+}
+
+static void CAN_Tx_IGNSw_Process(void)
+{
+	static SEG_XDATA U8 IGNSw_Tx_Data = 0x00U;
+	IGNSw_Tx_Data = IGN_SW_ON;
+	SEND_541(IGNSw_Tx_Data);
+}*/

@@ -1,0 +1,130 @@
+#include <compiler_defs.h>
+#include <C8051F850_defs.h>            // SFR declarations
+#include <stdio.h>
+
+#define SYSCLK 24000000/8
+#define BAURATE 115200
+
+SBIT(LED, SFR_P1, 0);
+
+void SYSCLK_Init (void);
+void Port_Init(void);
+void Timer2_Init(void);
+void ADC0_Init(void);
+void UART0_Init(void);
+
+INTERRUPT_PROTO (ADC_ISR, INTERRUPT_ADC0_EOC);
+
+void main(void)
+{
+	WDTCN = 0xDE;
+	WDTCN = 0xAD;
+	SYSCLK_Init ();                     // Initialize system clock to 24.5 MHz
+	Port_Init ();                       // Initialize crossbar and GPIO
+	Timer2_Init();                      // Init Timer2 to generate
+	                                    // Overflows to trigger ADC
+	UART0_Init();                       // Initialize UART0 for printf's
+	ADC0_Init();                        // Initialize ADC0
+
+	EA = 1;                             // Enable global interrupts
+	for(;;);
+
+}
+
+void SYSCLK_Init (void)
+{
+	
+	CLKSEL = 0x00;
+	RSTSRC = 0x06;
+}
+
+void Port_Init(void)
+{
+	P0MDOUT |= 0x10;
+	P1MDOUT |= 0x01;
+	P1MDIN &= ~ 0x04;
+	
+	XBR0 = 0x01;
+	XBR2 = 0x40;
+
+}
+
+void Timer2_Init(void)
+{
+	TMR2CN = 0x00;
+
+	CKCON |= 0x10;
+	TMR2RL = 65535 - (SYSCLK / 10000);
+	TMR2 = 0xFFFF;
+	TR2 = 1;
+
+}
+void ADC0_Init(void)
+{
+	ADC0CN0 = 0x02;
+	ADC0CF = (((SYSCLK)/12250000)-1)<<3;
+	ADC0CF |= 0x01;
+	ADC0AC = 0x00;
+	ADC0PWR = 0x00;
+	ADC0MX = 0x0A;
+	REF0CN = 0x08;
+	EIE1 |= 0x80;
+	ADEN = 1;
+}
+
+
+void UART0_Init(void)
+{
+	SCON0 = 0x10;
+	if(SYSCLK/BAURATE/2/256 < 1)
+	{
+		TH1 = -(SYSCLK/BAURATE/2);
+		CKCON |= 0x08;
+	}
+	else if(SYSCLK/BAURATE/2/256 <4)
+	{
+		TH1 = -(SYSCLK/BAURATE/2/4);
+		CKCON &= ~0x0B;
+		CKCON |= 0x01;
+	}
+	else if (SYSCLK/BAURATE/2/256 <12)
+	{
+		TH1 = -(SYSCLK/BAURATE/2/12);
+		CKCON &= ~0x0B;
+	}
+	else if (SYSCLK/BAURATE/2/256 <48)
+	{
+		TH1 = -(SYSCLK/BAURATE/2/48);
+		CKCON &= ~0x0B;
+		CKCON |= 0x02;
+	}
+	else
+	{
+		while(1);
+	}
+	TL1 = TH1;
+	TMOD &= ~0xF0;
+	TMOD |= 0x20;
+	TR1 = 1;
+	TI = 1;
+}
+INTERRUPT (ADC_ISR, INTERRUPT_ADC0_EOC)
+{
+	static unsigned long accumulator = 0;
+	static unsigned int measurements = 2048;
+	unsigned long result = 0;
+	unsigned long mV;
+	ADINT = 0;
+
+	accumulator += ADC0;
+	measurements--;
+	if(measurements == 0)
+	{
+		measurements = 2048;
+		result = accumulator / 2048;
+		accumulator = 0;
+		mV = (result *3300)/1023;
+		printf("P1.2 voltage: %ld mV/r/n", mV);
+
+	}
+}

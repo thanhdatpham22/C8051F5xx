@@ -1,0 +1,131 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h> 
+#include "uart.h"
+#include "timer.h"
+#include "config.h"
+
+#define SYSCLK      24000000           
+#define BAUDRATE      115200 		
+
+
+//U8 UART_Buffer_TX[] = "Hello World\r\n";        
+//bit TX_Ready = 1;
+
+SEGMENT_VARIABLE(UART1_Buffer[UART1_BUFFERSIZE], U8, SEG_XDATA);
+
+U8 UART1_Buffer_Size = 0;
+bit UART1_Received_Full = 0; 
+
+extern volatile unsigned long timeout_counter;
+extern volatile unsigned long last_timeout_counter;
+
+U16 i;
+
+
+static U8 Byte;
+
+void UART1_Init (void)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE2_PAGE;
+
+   SCON1 = 0x10;                       // SCON1: 8-bit variable bit rate
+
+   if (SYSCLK / BAUDRATE / 2 / 256 < 1) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2);
+      CKCON &= ~0x0B;                  // T1M = 1; SCA1:0 = xx
+      CKCON |=  0x08;
+   } 
+   else if (SYSCLK / BAUDRATE / 2 / 256 < 4) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 4);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 01
+      CKCON |=  0x01;
+   } 
+   else if (SYSCLK / BAUDRATE / 2 / 256 < 12) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 12);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 00
+   } 
+   else 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 48);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 10
+      CKCON |=  0x02;
+   }
+
+    TL1 = TH1;                          // Init Timer1
+    TMOD &= ~0xF0;                      // TMOD: timer 1 in 8-bit autoreload
+    TMOD |=  0x20;
+    TR1 = 1;                            // START Timer1
+
+    TI1 = 1;                            // Indicate TX0 ready (SCON1)
+	EIE2 |= 0x08;
+    SFRPAGE = SFRPAGE_save;
+}
+
+
+
+INTERRUPT(UART1_ISR, INTERRUPT_UART1)
+{ 
+	U8 SFRPAGE_save = SFRPAGE;
+    SFRPAGE = ACTIVE2_PAGE;
+	if (RI1 == 1)
+    {
+	    Byte = SBUF1;                    
+	    if (UART1_Buffer_Size < UART1_BUFFERSIZE)
+	    {
+	       UART1_Buffer[UART1_Buffer_Size] = Byte; // Store in array
+	       UART1_Buffer_Size++;	
+		   last_timeout_counter = timeout_counter; 	// Update array's size      		 
+	    }
+
+		if((UART1_Buffer_Size >= UART1_BUFFERSIZE)) 
+		{
+			UART1_Received_Full = 1;
+		}
+
+		RI1 = 0;  
+		     
+    }
+	SFRPAGE = SFRPAGE_save;
+}
+
+U16 CRC16_CCITT_FALSE(U8 *datac, U16 length)
+{
+    U16 crc = 0xFFFF; 
+    U16 polynomial = 0x1021;  
+	U16 i;
+	U8  j;
+    for (i = 0; i < length; i++)
+    {
+        crc ^= (datac[i] << 8);
+        for (j = 0; j < 8; j++)
+        {
+            if (crc & 0x8000)
+                crc = (crc << 1) ^ polynomial;
+            else
+                crc <<= 1;
+        }
+    }
+    return crc;
+}
+
+void SEND_String(U8 *str, U8 lenght)
+{
+	U8 SFRPAGE_save = SFRPAGE;
+	
+    SFRPAGE = ACTIVE2_PAGE;
+	
+    //while(*str != '\0') 	
+	for(i = 0; i <lenght; i++)           
+    {
+        while (!TI1);                
+        TI1 = 0;                     
+        SBUF1 = *str++;
+		LEDG = !LEDG;              
+    }
+
+    SFRPAGE = SFRPAGE_save;
+}

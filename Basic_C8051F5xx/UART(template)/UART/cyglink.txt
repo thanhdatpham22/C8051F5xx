@@ -1,0 +1,1 @@
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\UART(template)\UART\main.obj"  TO "D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\UART(template)\UART\UART0" RS(256) PL(68) PW(78) 

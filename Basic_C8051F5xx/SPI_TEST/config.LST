@@ -1,0 +1,85 @@
+C51 COMPILER V9.54   CONFIG                                                                04/18/2025 16:51:38 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE CONFIG
+OBJECT MODULE PLACED IN config.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe config.c DB OE BR INCDIR(c:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          
+   2          #include <compiler_defs.h>
+   3          #include <C8051F580_defs.h> 
+   4          
+   5          
+   6          void PCA0_Init (void)
+   7          {
+   8   1         U8 SFRPAGE_save = SFRPAGE;
+   9   1         SFRPAGE = ACTIVE_PAGE;
+  10   1      
+  11   1         PCA0MD   &= ~0x40;
+  12   1      
+  13   1         SFRPAGE = SFRPAGE_save;
+  14   1      }
+  15          void SYSCLK_Init (void)
+  16          {
+  17   1         U8 SFRPAGE_save = SFRPAGE;
+  18   1         SFRPAGE = CONFIG_PAGE;
+  19   1      
+  20   1         OSCICN |= 0x87;                    
+  21   1                                             
+  22   1         RSTSRC  = 0x04;                     
+  23   1      
+  24   1         SFRPAGE = SFRPAGE_save;
+  25   1      }
+  26          
+  27          void PORT_Init (void)
+  28          {
+  29   1      
+  30   1              //P0.6 CANTX pushpull, digital
+  31   1              //P0.7 CANRX opendrain, digital
+  32   1              //P1.3 UART1 pushpull, digital
+  33   1              //P1.4 UART1 opendrain, digital
+  34   1              //P2.0 LED YELLOW
+  35   1              //P2.1 LED GREEN
+  36   1              //P2.2 LED RED
+  37   1          U8 SFRPAGE_save = SFRPAGE;
+  38   1          SFRPAGE = CONFIG_PAGE;
+  39   1      
+  40   1              /*P0MDOUT   = 0x40; 
+  41   1              P0SKIP  = 0x3F;  
+  42   1      
+  43   1          P1MDOUT |= 0x08; //UART1 P1.3 TX push pull     
+  44   1              P1SKIP = 0x07;                                          
+  45   1      
+  46   1              P2MDOUT |= 0x03;  //LED P2.0, P2.1 , P2.2                 
+  47   1          P2SKIP  |= 0x03
+  48   1              ;
+  49   1              XBR0     = 0x02; //Enable crossbar CAN
+  50   1          XBR2    = 0x42;   */                  
+  51   1          P0MDOUT   = 0x74;
+  52   1          P1MDOUT   = 0x08;
+  53   1          P0SKIP    = 0x03;
+  54   1          P1SKIP    = 0x07;
+  55   1              P2MDOUT |= 0x03;  //LED P2.0, P2.1 , P2.2                 
+C51 COMPILER V9.54   CONFIG                                                                04/18/2025 16:51:38 PAGE 2   
+
+  56   1          P2SKIP  |= 0x03;
+  57   1          XBR0      = 0x06;
+  58   1          XBR2      = 0x42;                                       
+  59   1          SFRPAGE = SFRPAGE_save;
+  60   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     57    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

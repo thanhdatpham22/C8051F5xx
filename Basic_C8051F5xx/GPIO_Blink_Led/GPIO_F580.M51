@@ -1,0 +1,174 @@
+BL51 BANKED LINKER/LOCATER V6.22              03/21/2025  14:13:36  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
+C:\KEIL_V5\C51\BIN\BL51.EXE D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\G
+>> PIO_Blink_Led\main.obj TO D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\
+>> GPIO_Blink_Led\GPIO_F580 RS (256) PL (68) PW (78)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\GPIO_Blink_Led\main.obj (MA
+>> IN)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C_STARTUP)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C_INIT)
+
+
+LINK MAP OF MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\GPIO_Bli
+>> nk_Led\GPIO_F580 (MAIN)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     0004H     UNIT         ?DT?MAIN
+            IDATA   000CH     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     0020H     UNIT         ?PR?_TIMER2_INIT?MAIN
+                    0023H     0008H                  *** GAP ***
+            CODE    002BH     0003H     ABSOLUTE     
+            CODE    002EH     008CH     UNIT         ?C_C51STARTUP
+            CODE    00BAH     0035H     UNIT         ?PR?TIMER2_ISR?MAIN
+            CODE    00EFH     0017H     UNIT         ?PR?MAIN?MAIN
+            CODE    0106H     0011H     UNIT         ?PR?PORT_INIT?MAIN
+            CODE    0117H     000BH     UNIT         ?PR?OSCILLATOR_INIT?MAIN
+            CODE    0122H     0009H     UNIT         ?C_INITSEG
+
+
+
+OVERLAY MAP OF MODULE:   D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\GPIO
+>> _Blink_Led\GPIO_F580 (MAIN)
+
+
+SEGMENT
+  +--> CALLED SEGMENT
+---------------------
+?C_C51STARTUP
+  +--> ?PR?MAIN?MAIN
+  +--> ?C_INITSEG
+
+?PR?MAIN?MAIN
+  +--> ?PR?OSCILLATOR_INIT?MAIN
+  +--> ?PR?PORT_INIT?MAIN
+  +--> ?PR?_TIMER2_INIT?MAIN
+
+
+
+SYMBOL TABLE OF MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\GPIO
+>> _Blink_Led\GPIO_F580 (MAIN)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+BL51 BANKED LINKER/LOCATER V6.22            03/21/2025  14:13:36  PAGE 2
+
+
+  -------         MODULE        MAIN
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  C:00BAH         PUBLIC        Timer2_ISR
+  B:00A8H.7       PUBLIC        EA
+  D:00A7H         PUBLIC        SFRPAGE
+  D:00A6H         PUBLIC        P2MDOUT
+  B:00C8H.7       PUBLIC        TF2H
+  D:00D9H         PUBLIC        PCA0MD
+  D:00C7H         PUBLIC        XBR2
+  D:00CCH         PUBLIC        TMR2
+  C:00EFH         PUBLIC        main
+  D:0008H         SYMBOL        count
+  C:0003H         PUBLIC        _TIMER2_Init
+  B:00A0H.0       PUBLIC        LEDYELLOW
+  D:00C8H         PUBLIC        TMR2CN
+  D:000AH         SYMBOL        led_state
+  D:00D6H         PUBLIC        P2SKIP
+  C:0106H         PUBLIC        PORT_Init
+  D:00A1H         PUBLIC        OSCICN
+  D:00CAH         PUBLIC        TMR2RL
+  B:00A0H.1       PUBLIC        LEDGREEN
+  B:00A8H.5       PUBLIC        ET2
+  B:00C8H.2       PUBLIC        TR2
+  D:008EH         PUBLIC        CKCON
+  C:0117H         PUBLIC        OSCILLATOR_Init
+  -------         PROC          MAIN
+  C:00EFH         LINE#         18
+  C:00EFH         LINE#         20
+  C:00EFH         LINE#         21
+  C:00F2H         LINE#         22
+  C:00F5H         LINE#         24
+  C:00F8H         LINE#         25
+  C:00FBH         LINE#         26
+  C:0102H         LINE#         28
+  C:0104H         LINE#         29
+  -------         ENDPROC       MAIN
+  -------         PROC          OSCILLATOR_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:0117H         LINE#         33
+  C:0117H         LINE#         34
+  C:0117H         LINE#         35
+  C:0119H         LINE#         36
+  C:011CH         LINE#         38
+  C:011FH         LINE#         40
+  C:0121H         LINE#         41
+  -------         ENDPROC       OSCILLATOR_INIT
+  -------         PROC          PORT_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:0106H         LINE#         43
+  C:0106H         LINE#         44
+  C:0106H         LINE#         45
+  C:0108H         LINE#         46
+  C:010BH         LINE#         48
+  C:010EH         LINE#         49
+  C:0111H         LINE#         50
+  C:0114H         LINE#         52
+  C:0116H         LINE#         53
+  -------         ENDPROC       PORT_INIT
+  -------         PROC          _TIMER2_INIT
+  D:0006H         SYMBOL        counts
+  -------         DO            
+BL51 BANKED LINKER/LOCATER V6.22            03/21/2025  14:13:36  PAGE 3
+
+
+  D:0005H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:0003H         LINE#         55
+  C:0003H         LINE#         56
+  C:0003H         LINE#         57
+  C:0005H         LINE#         58
+  C:0008H         LINE#         60
+  C:000AH         LINE#         62
+  C:000DH         LINE#         64
+  C:0016H         LINE#         65
+  C:001CH         LINE#         66
+  C:001EH         LINE#         67
+  C:0020H         LINE#         69
+  C:0022H         LINE#         70
+  -------         ENDPROC       _TIMER2_INIT
+  -------         PROC          TIMER2_ISR
+  C:00BAH         LINE#         73
+  C:00BEH         LINE#         75
+  C:00C0H         LINE#         76
+  C:00C8H         LINE#         77
+  C:00D3H         LINE#         78
+  C:00D3H         LINE#         79
+  C:00D5H         LINE#         81
+  C:00D5H         LINE#         82
+  C:00E2H         LINE#         83
+  C:00E2H         LINE#         84
+  C:00E4H         LINE#         85
+  C:00EAH         LINE#         86
+  C:00EAH         LINE#         87
+  -------         ENDPROC       TIMER2_ISR
+  -------         ENDMOD        MAIN
+
+Program Size: data=13.0 xdata=0 code=291
+LINK/LOCATE RUN COMPLETE.  0 WARNING(S),  0 ERROR(S)

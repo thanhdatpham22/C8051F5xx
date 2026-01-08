@@ -1,0 +1,23 @@
+C51 COMPILER V9.54   MAIM                                                                  03/21/2025 10:23:12 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIM
+OBJECT MODULE PLACED IN maim.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe maim.c DB OE BR INCDIR(C:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

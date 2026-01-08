@@ -1,0 +1,7 @@
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\main.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\uart.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\timer.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\can.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\config.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\application.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\spi.obj"  TO "D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI_TEST\APPLICATION" RS(256) PL(68) PW(78) 

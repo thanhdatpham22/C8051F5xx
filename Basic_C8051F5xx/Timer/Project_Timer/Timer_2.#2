@@ -1,0 +1,31 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h>
+
+static unsigned long count = 0;
+
+void _CONFIG_TIMER2(void)
+{
+	U8 SFRPAGE_save = SFRPAGE;
+    SFRPAGE = ACTIVE_PAGE;
+	CKCON  |= 0x00;
+	TMR2CN &= ~0x01;
+
+	TMR2RL = (65536 -2000);
+	TMR2 = TMR2RL;
+	TMR2CN = 0x04;
+	ET2 = 1;
+	SFRPAGE = SFRPAGE_save;
+
+}
+
+INTERRUPT (TIMER2_ISR, INTERRUPT_TIMER2)
+{
+	TMR2CN &= ~0x80;  // Clear TF2 (bit 7)
+	count++;
+}
+
+void delay_t2_ms(unsigned long ms)
+{
+	unsigned long start = count;
+	while((count - start) <ms);
+}

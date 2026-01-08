@@ -1,0 +1,11 @@
+#ifndef TIMER0_H
+#define TIMER0_H
+
+
+void Timer0_Init(void);
+void delay_ms(unsigned int ms);
+void TIMER2_Init (void);
+void Delay_t2_us (U8 time_us);
+void Delay_t2_ms (U8 time_ms);
+
+#endif TIMER0_H

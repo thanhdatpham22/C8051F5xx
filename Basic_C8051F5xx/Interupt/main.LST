@@ -1,0 +1,710 @@
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe main.c DB OE BR INCDIR(C:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          //-----------------------------------------------------------------------------
+   2          // F580_SPI0_EEPROM_Polled_Mode.c
+   3          //-----------------------------------------------------------------------------
+   4          // Copyright 2008 Silicon Laboratories, Inc.
+   5          // http://www.silabs.com
+   6          //
+   7          // Program Description:
+   8          //
+   9          // This program accesses a SPI EEPROM using polled mode access. The 'F580 MCU
+  10          // is configured in 4-wire Single Master Mode, and the EEPROM is the only
+  11          // slave device connected to the SPI bus. The read/write operations are
+  12          // tailored to access a Microchip 4 kB EEPROM 25LC320. The relevant hardware
+  13          // connections of the 'F580 MCU are shown here:
+  14          //
+  15          // P0.0 - SPI SCK    (digital output, push-pull)
+  16          // P0.1 - SPI MISO   (digital input,  open-drain)
+  17          // P0.2 - SPI MOSI   (digital output, push-pull)
+  18          // P0.3 - SPI NSS    (digital output, push-pull)
+  19          // P0.4 - UART TXD   (digital output, push-pull)
+  20          // P0.5 - UART RXD   (digital input,  open-drain)
+  21          // P1.3 - LED        (digital output, push-pull)
+  22          //
+  23          //
+  24          // How To Test:
+  25          //
+  26          // Method1:
+  27          // 1) Download the code to a 'F580 device that is connected as above.
+  28          // 2) Run the code. The LED will blink fast during the write/read/verify
+  29          //    operations.
+  30          // 3) If the verification passes, the LED will blink slowly. If it fails,
+  31          //    the LED will be OFF.
+  32          //
+  33          // Method2 (optional):
+  34          // 1) Download code to a 'F580 device that is connected as above
+  35          // 2) Connect USB cable from the development board to a PC
+  36          // 3) On the PC, open HyperTerminal (or any other terminal program) and connect
+  37          //    to the USB port (virtual com port) at <BAUDRATE>, 8 data bits, no parity,
+  38          //    1 stop bit, no flow control.
+  39          // 4) HyperTerminal will print the progress of the write/read operation, and in
+  40          //    the end will print the test result as pass or fail. Additionally, if the
+  41          //    verification passes, the LED will blink slowly. If it fails, the LED will
+  42          //    be OFF.
+  43          //
+  44          //
+  45          // Target:         C8051F580 (Side A of a C8051F580-TB)
+  46          // Tool chain:     Keil C51 8.0 / Keil EVAL C51
+  47          // Command Line:   None
+  48          //
+  49          // Release 1.1 / 09 JUL 2015 (SG)
+  50          //    - Corrected UART initialization
+  51          //
+  52          // Release 1.0 / 21 JUL 2008 (ADT)
+  53          //    - Initial Revision
+  54          //
+  55          //-----------------------------------------------------------------------------
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 2   
+
+  56          // Includes
+  57          //-----------------------------------------------------------------------------
+  58          
+  59          #include <compiler_defs.h>
+  60          #include <C8051F580_defs.h>            // SFR declarations
+  61          #include <stdio.h>                     // printf is declared here
+  62          
+  63          //-----------------------------------------------------------------------------
+  64          // Global Constants
+  65          //-----------------------------------------------------------------------------
+  66          #define BAUDRATE           115200      // Baud rate of UART in bps
+  67          #define SYSCLK             24000000    // Internal oscillator frequency in Hz
+  68          
+  69          // Microchip 25AA320 Slave EEPROM Parameters
+  70          #define  F_SCK_MAX         2000000     // Max SCK freq (Hz)
+  71          #define  T_NSS_DISABLE_MIN 500         // Min NSS disable time (ns)
+  72          #define  EEPROM_CAPACITY   4096        // EEPROM capacity (bytes)
+  73          
+  74          // EEPROM Instruction Set
+  75          #define  EEPROM_CMD_READ   0x03        // Read Command
+  76          #define  EEPROM_CMD_WRITE  0x02        // Write Command
+  77          #define  EEPROM_CMD_WRDI   0x04        // Reset Write Enable Latch Command
+  78          #define  EEPROM_CMD_WREN   0x06        // Set Write Enable Latch Command
+  79          #define  EEPROM_CMD_RDSR   0x05        // Read Status Register Command
+  80          #define  EEPROM_CMD_WRSR   0x01        // Write Status Register Command
+  81          
+  82          SBIT (LED, SFR_P2, 1);                 // LED==1 means ON
+  83          
+  84          //-----------------------------------------------------------------------------
+  85          // Function Prototypes
+  86          //-----------------------------------------------------------------------------
+  87          
+  88          void PCA0_Init (void);
+  89          void OSCILLATOR_Init (void);
+  90          void PORT_Init (void);
+  91          void TIMER2_Init (void);
+  92          void UART1_Init (void);
+  93          void SPI0_Init (void);
+  94          void Init_Device (void);
+  95          void SEND_String(U8 *str, U8 lenght);
+  96          void Delay_us (U8 time_us);
+  97          void Delay_ms (U8 time_ms);
+  98          void EEPROM_Write (U16 address, U8 value);
+  99          U8 EEPROM_Read (U16 address);
+ 100          
+ 101          //-----------------------------------------------------------------------------
+ 102          // main() Routine
+ 103          //-----------------------------------------------------------------------------
+ 104          void main (void)
+ 105          {
+ 106   1         U16 address;                        // EEPROM address
+ 107   1         U8 test_byte; 
+ 108   1         U8 i;                      // Used as a temporary variable
+ 109   1      
+ 110   1         Init_Device ();                     // Initializes hardware peripherals
+ 111   1      
+ 112   1              
+ 113   1         // The following code will test the EEPROM by performing write/read/verify
+ 114   1         // operations. The first test will write 0xFFs to the EEPROM, and the
+ 115   1         // second test will write the LSBs of the EEPROM addresses.
+ 116   1      
+ 117   1         SFRPAGE = ACTIVE_PAGE;              // Set for printf()
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 3   
+
+ 118   1              printf("\nUART Test Begin\n");     // G?i thông báo b?t d?u
+ 119   1      
+ 120   1          while (1)                          // Vòng l?p vô h?n
+ 121   1          {
+ 122   2              printf("Hello UART - %d\n", (int)(SYSCLK/1000000)); // G?i chu?i test
+ 123   2              LED = !LED;                    // Ð?o tr?ng thái LED
+ 124   2              Delay_ms(1000);                // Ch? 1 giây
+ 125   2          }
+ 126   1         // Fill EEPROM with 0xFF's
+ 127   1         /*LED = 1;
+ 128   1         SEND_String(&test_byte, 1);
+ 129   1         printf("Filling with 0xFF's...\n");
+ 130   1         for (address = 0x0000; address <= 0x00FF; address += 8)
+ 131   1         {
+ 132   1            for(i =0 ; i < 8; i++)
+ 133   1                {
+ 134   1                      test_byte = i +1;
+ 135   1                      EEPROM_Write(address + i, test_byte);
+ 136   1                      if ((address % 16) == 0 && i == 0)
+ 137   1               {
+ 138   1                  printf("\nWriting 0x%04x: %02x ", address + i, (U16)test_byte);
+ 139   1                  LED = !LED;
+ 140   1               }
+ 141   1               else
+ 142   1               {
+ 143   1                  printf("%02x ", (U16)test_byte);
+ 144   1               }
+ 145   1      
+ 146   1                }
+ 147   1         }
+ 148   1      
+ 149   1         // Verify EEPROM with 0xFF's
+ 150   1         printf("\n\nVerifying 0xFF's...\n");
+ 151   1         for (address = 0; address < EEPROM_CAPACITY; address++)
+ 152   1         {
+ 153   1            test_byte = EEPROM_Read (address);
+ 154   1      
+ 155   1            // Print status to UART0
+ 156   1            if ((address % 16) == 0)
+ 157   1            {
+ 158   1               printf ("\nVerifying 0x%04x: %02x ", address, (U16)test_byte);
+ 159   1               LED = !LED;
+ 160   1            }
+ 161   1            else
+ 162   1            {
+ 163   1               printf ("%02x ", (U16)test_byte);
+ 164   1            }
+ 165   1      
+ 166   1            if (test_byte != 0xFF)
+ 167   1            {
+ 168   1               LED = 0;
+ 169   1               printf ("Error at %u\n", address);
+ 170   1               while (1);                    // Stop here on error (for debugging)
+ 171   1            }
+ 172   1         }
+ 173   1      
+ 174   1         // Fill EEPROM with LSB of EEPROM addresses
+ 175   1         printf("\n\nFilling with LSB of EEPROM addresses...\n");
+ 176   1         for (address = 0; address < EEPROM_CAPACITY; address++)
+ 177   1         {
+ 178   1            test_byte = address & 0xFF;
+ 179   1            EEPROM_Write (address, test_byte);
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 4   
+
+ 180   1      
+ 181   1            // Print status to UART0
+ 182   1            if ((address % 16) == 0)
+ 183   1            {
+ 184   1               printf ("\nWriting 0x%04x: %02x ", address, (U16)test_byte);
+ 185   1               LED = !LED;
+ 186   1            }
+ 187   1            else 
+ 188   1            {
+ 189   1               printf ("%02x ", (U16)test_byte); 
+ 190   1            }
+ 191   1         }
+ 192   1      
+ 193   1         // Verify EEPROM with LSB of EEPROM addresses
+ 194   1         printf("\n\nVerifying LSB of EEPROM addresses...\n");
+ 195   1         for (address = 0; address < EEPROM_CAPACITY; address++)
+ 196   1         {
+ 197   1            test_byte = EEPROM_Read (address);
+ 198   1      
+ 199   1            // print status to UART0
+ 200   1            if ((address % 16) == 0)
+ 201   1            {
+ 202   1               printf ("\nVerifying 0x%04x: %02x ", address, (U16)test_byte);
+ 203   1               LED = !LED;
+ 204   1            }
+ 205   1            else 
+ 206   1            {
+ 207   1               printf ("%02x ", (U16)test_byte); 
+ 208   1            }
+ 209   1      
+ 210   1            if (test_byte != (address & 0xFF))
+ 211   1            {
+ 212   1               LED = 0;
+ 213   1               printf ("Error at %u\n", address);
+ 214   1               while (1);                    // Stop here on error (for debugging)
+ 215   1            }
+ 216   1         }
+ 217   1      
+ 218   1         printf ("\n\nVerification success!\n");
+ 219   1       
+ 220   1         while (1)                           // Loop forever
+ 221   1         {
+ 222   1                      printf("UART Test - Hello World!\n");
+ 223   1            LED = !LED;                      // Flash LED when done (all verified)
+ 224   1            Delay_ms (200);
+ 225   1         }  */
+ 226   1      }
+*** WARNING C280 IN LINE 106 OF main.c: 'address': unreferenced local variable
+*** WARNING C280 IN LINE 107 OF main.c: 'test_byte': unreferenced local variable
+*** WARNING C280 IN LINE 108 OF main.c: 'i': unreferenced local variable
+ 227          
+ 228          //-----------------------------------------------------------------------------
+ 229          // Initialization Subroutines
+ 230          //-----------------------------------------------------------------------------
+ 231          
+ 232          //-----------------------------------------------------------------------------
+ 233          // PCA0_Init
+ 234          //-----------------------------------------------------------------------------
+ 235          //
+ 236          // Return Value : None
+ 237          // Parameters   : None
+ 238          //
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 5   
+
+ 239          // This function disables the watchdog timer.
+ 240          //
+ 241          //-----------------------------------------------------------------------------
+ 242          void PCA0_Init (void)
+ 243          {
+ 244   1         U8 SFRPAGE_save = SFRPAGE;
+ 245   1         SFRPAGE = ACTIVE_PAGE;
+ 246   1      
+ 247   1         PCA0MD   &= ~0x40;
+ 248   1      
+ 249   1         SFRPAGE = SFRPAGE_save;
+ 250   1      }
+ 251          
+ 252          //-----------------------------------------------------------------------------
+ 253          // OSCILLATOR_Init
+ 254          //-----------------------------------------------------------------------------
+ 255          //
+ 256          // Return Value : None
+ 257          // Parameters   : None
+ 258          //
+ 259          // This function initializes the system clock to use the internal oscillator
+ 260          // at 24 MHz.
+ 261          //
+ 262          //-----------------------------------------------------------------------------
+ 263          void OSCILLATOR_Init (void)
+ 264          {
+ 265   1         U8 SFRPAGE_save = SFRPAGE;
+ 266   1         SFRPAGE = CONFIG_PAGE;
+ 267   1      
+ 268   1         OSCICN   = 0x87;
+ 269   1      
+ 270   1         SFRPAGE = SFRPAGE_save;
+ 271   1      }
+ 272          
+ 273          //-----------------------------------------------------------------------------
+ 274          // PORT_Init
+ 275          //-----------------------------------------------------------------------------
+ 276          //
+ 277          // Return Value : None
+ 278          // Parameters   : None
+ 279          //
+ 280          // This function configures the crossbar and GPIO ports.
+ 281          //
+ 282          // P0.0  -  SCK  (SPI0), Push-Pull,  Digital
+ 283          // P0.1  -  MISO (SPI0), Open-Drain, Digital
+ 284          // P0.2  -  MOSI (SPI0), Push-Pull,  Digital
+ 285          // P0.3  -  NSS  (SPI0), Push-Pull,  Digital
+ 286          // P0.4  -  TX0 (UART0), Push-Pull,  Digital
+ 287          // P0.5  -  RX0 (UART0), Open-Drain, Digital
+ 288          //
+ 289          // P1.3  -  Skipped,     Push-Pull,  Digital (LED D2 on Target Board)
+ 290          // P1.4  -  Skipped,     Open-Drain, Digital (Switch S2 on Target Board)
+ 291          //
+ 292          //-----------------------------------------------------------------------------
+ 293          void PORT_Init (void)
+ 294          {
+ 295   1         U8 SFRPAGE_save = SFRPAGE;
+ 296   1         SFRPAGE = CONFIG_PAGE;
+ 297   1      
+ 298   1              P0MDOUT   = 0x34; //spi P0.2 clk , P0.3 MISO(Opendrain), P0.4 MOSI (Pull), P0.5 EN
+ 299   1              P0SKIP  = 0xC3;  
+ 300   1      
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 6   
+
+ 301   1          P1MDOUT = 0x08; //UART1 P1.3 TX push pull     
+ 302   1              P1SKIP = 0x07;                                          
+ 303   1      
+ 304   1              P2MDOUT |= 0x03;  //LED P2.0, P2.1                  
+ 305   1          P2SKIP  |= 0x03
+ 306   1              ;
+ 307   1              XBR0     = 0x00; //Enable crossbar
+ 308   1              XBR1 = 0x04;
+ 309   1          XBR2    = 0x42;  
+ 310   1      
+ 311   1         SFRPAGE = SFRPAGE_save;
+ 312   1      }
+ 313          
+ 314          //-----------------------------------------------------------------------------
+ 315          // TIMER2_Init
+ 316          //-----------------------------------------------------------------------------
+ 317          //
+ 318          // Return Value : None
+ 319          // Parameters   : None
+ 320          //
+ 321          // Initializes Timer2 to be clocked by SYSCLK for use as a delay timer.
+ 322          //
+ 323          //-----------------------------------------------------------------------------
+ 324          void TIMER2_Init (void)
+ 325          {
+ 326   1         // CKCON is available on all pages
+ 327   1      
+ 328   1         CKCON    |= 0x10;
+ 329   1      }
+ 330          
+ 331          //-----------------------------------------------------------------------------
+ 332          // UART0_Init
+ 333          //-----------------------------------------------------------------------------
+ 334          //
+ 335          // Return Value : None
+ 336          // Parameters   : None
+ 337          //
+ 338          // Configure the UART0 using Baudrate generator, for <BAUDRATE1> and 8-N-1.
+ 339          //
+ 340          //-----------------------------------------------------------------------------
+ 341          void UART1_Init (void)
+ 342          {
+ 343   1         U8 SFRPAGE_save = SFRPAGE;
+ 344   1         SFRPAGE = ACTIVE2_PAGE;
+ 345   1      
+ 346   1         SCON1 = 0x10;                       // SCON1: 8-bit variable bit rate
+ 347   1      
+ 348   1         if (SYSCLK / BAUDRATE / 2 / 256 < 1) 
+ 349   1         {
+ 350   2            TH1 = -(SYSCLK / BAUDRATE / 2);
+ 351   2            CKCON &= ~0x0B;                  // T1M = 1; SCA1:0 = xx
+ 352   2            CKCON |=  0x08;
+ 353   2         } 
+ 354   1         else if (SYSCLK / BAUDRATE / 2 / 256 < 4) 
+ 355   1         {
+ 356   2            TH1 = -(SYSCLK / BAUDRATE / 2 / 4);
+ 357   2            CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 01
+ 358   2            CKCON |=  0x01;
+ 359   2         } 
+ 360   1         else if (SYSCLK / BAUDRATE / 2 / 256 < 12) 
+ 361   1         {
+ 362   2            TH1 = -(SYSCLK / BAUDRATE / 2 / 12);
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 7   
+
+ 363   2            CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 00
+ 364   2         } 
+ 365   1         else 
+ 366   1         {
+ 367   2            TH1 = -(SYSCLK / BAUDRATE / 2 / 48);
+ 368   2            CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 10
+ 369   2            CKCON |=  0x02;
+ 370   2         }
+ 371   1      
+ 372   1          TL1 = TH1;                          // Init Timer1
+ 373   1          TMOD &= ~0xF0;                      // TMOD: timer 1 in 8-bit autoreload
+ 374   1          TMOD |=  0x20;
+ 375   1          TR1 = 1;                            // START Timer1
+ 376   1      
+ 377   1          TI1 = 1;                            // Indicate TX0 ready (SCON1)
+ 378   1              EIE2 |= 0x08;
+ 379   1          SFRPAGE = SFRPAGE_save;
+ 380   1      }
+ 381          
+ 382          //-----------------------------------------------------------------------------
+ 383          // SPI0_Init
+ 384          //-----------------------------------------------------------------------------
+ 385          //
+ 386          // Return Value : None
+ 387          // Parameters   : None
+ 388          //
+ 389          // Configures SPI0 to use 4-wire Single-Master mode. The SPI timing is
+ 390          // configured for Mode 0,0 (data centered on first edge of clock phase and
+ 391          // SCK line low in idle state). The SPI clock is set to 1.75 MHz. The NSS pin
+ 392          // is set to 1.
+ 393          //
+ 394          //-----------------------------------------------------------------------------
+ 395          void SPI0_Init()
+ 396          {
+ 397   1         U8 SFRPAGE_save = SFRPAGE;
+ 398   1         SFRPAGE = ACTIVE_PAGE;
+ 399   1      
+ 400   1         SPI0CFG   = 0x40;                   // Enable the SPI as a Master
+ 401   1                                             // CKPHA = '0', CKPOL = '0'
+ 402   1      
+ 403   1         SPI0CN    = 0x0D;                   // 4-wire, single master mode
+ 404   1                                             // SPI0 enable
+ 405   1      
+ 406   1         // The equation for SPI0CKR is (SYSCLK/(2*F_SCK_MAX))-1, but this yields
+ 407   1         // a SPI frequency that is slightly more than 2 MHz. But, 2 MHz is the max
+ 408   1         // frequency spec of the EEPROM used here. So, the "-1" term is omitted
+ 409   1         // in the following usage:
+ 410   1         SPI0CKR   = (SYSCLK / (2 * F_SCK_MAX));
+ 411   1      
+ 412   1         SFRPAGE = SFRPAGE_save;
+ 413   1      }
+ 414          
+ 415          //-----------------------------------------------------------------------------
+ 416          // Init_Device
+ 417          //-----------------------------------------------------------------------------
+ 418          //
+ 419          // Return Value : None
+ 420          // Parameters   : None
+ 421          //
+ 422          // Calls all device initialization functions.
+ 423          //
+ 424          //-----------------------------------------------------------------------------
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 8   
+
+ 425          void Init_Device (void)
+ 426          {
+ 427   1         PCA0_Init ();
+ 428   1         OSCILLATOR_Init ();
+ 429   1         PORT_Init ();
+ 430   1         TIMER2_Init ();
+ 431   1         UART1_Init ();
+ 432   1         SPI0_Init ();
+ 433   1      }
+ 434          
+ 435          //-----------------------------------------------------------------------------
+ 436          // Support Subroutines
+ 437          //-----------------------------------------------------------------------------
+ 438          
+ 439          //-----------------------------------------------------------------------------
+ 440          // Delay_us
+ 441          //-----------------------------------------------------------------------------
+ 442          //
+ 443          // Return Value : None
+ 444          // Parameters   : 1. time_us - time delay in microseconds
+ 445          //                   range: 1 to 255
+ 446          //
+ 447          // Creates a delay for the specified time (in microseconds) using TIMER2. The
+ 448          // time tolerance is approximately +/-50 ns (1/SYSCLK + function call time).
+ 449          //
+ 450          //-----------------------------------------------------------------------------
+ 451          void Delay_us (U8 time_us)
+ 452          {
+ 453   1         U8 SFRPAGE_save = SFRPAGE;
+ 454   1         SFRPAGE = ACTIVE_PAGE;
+ 455   1      
+ 456   1         TR2   = 0;                          // Stop timer
+ 457   1         TF2H  = 0;                          // Clear timer overflow flag
+ 458   1         TMR2  = -((U16)(SYSCLK / 1000000) * (U16)(time_us));
+ 459   1         TR2   = 1;                          // Start timer
+ 460   1         while (!TF2H);                      // Wait till timer overflow occurs
+ 461   1         TR2   = 0;                          // Stop timer
+ 462   1      
+ 463   1         SFRPAGE = SFRPAGE_save;
+ 464   1      }
+ 465          
+ 466          //-----------------------------------------------------------------------------
+ 467          // Delay_ms
+ 468          //-----------------------------------------------------------------------------
+ 469          //
+ 470          // Return Value : None
+ 471          // Parameters   : 1. time_ms - time delay in milliseconds
+ 472          //                   range: 1 to 255
+ 473          //
+ 474          // Creates a delay for the specified time (in milliseconds) using TIMER2. The
+ 475          // time tolerance is approximately +/-50 ns (1/SYSCLK + function call time).
+ 476          //
+ 477          //-----------------------------------------------------------------------------
+ 478          void Delay_ms (U8 time_ms)
+ 479          {
+ 480   1         U8 i;
+ 481   1      
+ 482   1         while(time_ms--) 
+ 483   1         {
+ 484   2            for(i = 0; i< 10; i++)           // 10 * 100 microsecond delay
+ 485   2            {         
+ 486   3               Delay_us (100); 
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 9   
+
+ 487   3            }
+ 488   2         }
+ 489   1      }
+ 490          
+ 491          //-----------------------------------------------------------------------------
+ 492          // EEPROM_Write
+ 493          //-----------------------------------------------------------------------------
+ 494          //
+ 495          // Return Value : None
+ 496          // Parameters   : 1. address - the destination EEPROM address.
+ 497          //                   range: 0 to EEPROM_CAPACITY
+ 498          //                2. value - the value to write.
+ 499          //                   range: 0x00 to 0xFF
+ 500          //
+ 501          // Writes one byte to the specified address in the EEPROM. This function polls
+ 502          // the EEPROM status register after the write operation, and returns only after
+ 503          // the status register indicates that the write cycle is complete. This is to
+ 504          // prevent from having to check the status register before a read operation.
+ 505          //
+ 506          //-----------------------------------------------------------------------------
+ 507          void EEPROM_Write (U16 address, U8 value)
+ 508          {
+ 509   1         U8 SFRPAGE_save = SFRPAGE;
+ 510   1         SFRPAGE = ACTIVE_PAGE;
+ 511   1      
+ 512   1         // Writing a byte to the EEPROM is a five-step operation.
+ 513   1      
+ 514   1         // Step1: Set the Write Enable Latch to 1
+ 515   1         NSSMD0   = 0;                       // Step1.1: Activate Slave Select
+ 516   1         SPI0DAT  = EEPROM_CMD_WREN;         // Step1.2: Send the WREN command
+ 517   1         while (!SPIF);                      // Step1.3: Wait for end of transfer
+ 518   1         SPIF     = 0;                       // Step1.4: Clear the SPI intr. flag
+ 519   1         NSSMD0   = 1;                       // Step1.5: Deactivate Slave Select
+ 520   1         Delay_us (1);                       // Step1.6: Wait for at least
+ 521   1                                             //          T_NSS_DISABLE_MIN
+ 522   1         // Step2: Send the WRITE command
+ 523   1         NSSMD0   = 0;
+ 524   1         SPI0DAT  = EEPROM_CMD_WRITE;
+ 525   1         while (!SPIF);
+ 526   1         SPIF     = 0;
+ 527   1      
+ 528   1         // Step3: Send the EEPROM destination address (MSB first)
+ 529   1         SPI0DAT  = (U8)((address >> 8) & 0x00FF);
+ 530   1         while (!SPIF);
+ 531   1         SPIF     = 0;
+ 532   1         SPI0DAT  = (U8)(address & 0x00FF);
+ 533   1         while (!SPIF);
+ 534   1         SPIF     = 0;
+ 535   1      
+ 536   1         // Step4: Send the value to write
+ 537   1         SPI0DAT  = value;
+ 538   1         while (!SPIF);
+ 539   1         SPIF     = 0;
+ 540   1         NSSMD0   = 1;
+ 541   1         Delay_us (1);
+ 542   1      
+ 543   1         // Step5: Poll on the Write In Progress (WIP) bit in Read Status Register
+ 544   1         do
+ 545   1         {
+ 546   2            NSSMD0   = 0;                    // Activate Slave Select
+ 547   2            SPI0DAT  = EEPROM_CMD_RDSR;      // Send the Read Status Register command
+ 548   2            while (!SPIF);                   // Wait for the command to be sent out
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 10  
+
+ 549   2            SPIF     = 0;
+ 550   2            SPI0DAT  = 0;                    // Dummy write to output serial clock
+ 551   2            while (!SPIF);                   // Wait for the register to be read
+ 552   2            SPIF     = 0;
+ 553   2            NSSMD0   = 1;                    // Deactivate Slave Select after read
+ 554   2            Delay_us (1);
+ 555   2         } while((SPI0DAT & 0x01) == 0x01);
+ 556   1      
+ 557   1         SFRPAGE = SFRPAGE_save;
+ 558   1      }
+ 559          
+ 560          //-----------------------------------------------------------------------------
+ 561          // EEPROM_Read
+ 562          //-----------------------------------------------------------------------------
+ 563          //
+ 564          // Return Value : The value that was read from the EEPROM
+ 565          //                   range: 0x00 to 0xFF
+ 566          // Parameters   : 1. address - the source EEPROM address.
+ 567          //                   range: 0 to EEPROM_CAPACITY
+ 568          //
+ 569          // Reads one byte from the specified EEPROM address.
+ 570          //
+ 571          //-----------------------------------------------------------------------------
+ 572          U8 EEPROM_Read (U16 address)
+ 573          {
+ 574   1         U8 spi_data;
+ 575   1      
+ 576   1         U8 SFRPAGE_save = SFRPAGE;
+ 577   1         SFRPAGE = ACTIVE_PAGE;
+ 578   1      
+ 579   1         // Reading a byte from the EEPROM is a three-step operation.
+ 580   1      
+ 581   1         // Step1: Send the READ command
+ 582   1         NSSMD0   = 0;                       // Activate Slave Select
+ 583   1         SPI0DAT  = EEPROM_CMD_READ;
+ 584   1         while (!SPIF);
+ 585   1         SPIF     = 0;
+ 586   1      
+ 587   1         // Step2: Send the EEPROM source address (MSB first)
+ 588   1         SPI0DAT  = (U8)((address >> 8) & 0x00FF);
+ 589   1         while (!SPIF);
+ 590   1         SPIF     = 0;
+ 591   1         SPI0DAT  = (U8)(address & 0x00FF);
+ 592   1         while (!SPIF);
+ 593   1         SPIF     = 0;
+ 594   1      
+ 595   1         // Step3: Read the value returned
+ 596   1         SPI0DAT  = 0;                       // Dummy write to output serial clock
+ 597   1         while (!SPIF);                      // Wait for the value to be read
+ 598   1         SPIF     = 0;
+ 599   1         NSSMD0   = 1;                       // Deactivate Slave Select
+ 600   1         Delay_us (1);
+ 601   1      
+ 602   1         spi_data = SPI0DAT;                 // Read data before restoring SFR page
+ 603   1      
+ 604   1         SFRPAGE = SFRPAGE_save;
+ 605   1      
+ 606   1         return spi_data;
+ 607   1      }
+ 608          
+ 609          #ifdef SDCC
+              void SEND_String(U8 *str, U8 lenght)
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 11  
+
+              {
+                      U8 SFRPAGE_save = SFRPAGE;
+                      
+                  SFRPAGE = ACTIVE2_PAGE;
+                      
+                  //while(*str != '\0')       
+                      for(i = 0; i <lenght; i++)           
+                  {
+                      while (!TI1);                
+                      TI1 = 0;                     
+                      SBUF1 = *str++;
+                              LEDG = !LEDG;              
+                  }
+              
+                  SFRPAGE = SFRPAGE_save;
+              }
+              // SDCC does not include a definition for putchar(), which is used in printf()
+              // and so it is defined here.  The prototype does not need to be explicitly
+              // defined because it is provided in stdio.h
+              
+              //-----------------------------------------------------------------------------
+              // putchar
+              //-----------------------------------------------------------------------------
+              //
+              // Return Value : None
+              // Parameters   : character to send to UART
+              //
+              // This function outputs a character to the UART.
+              //-----------------------------------------------------------------------------
+              void putchar (char input)
+              {
+                      U8 SFRPAGE_save = SFRPAGE;
+                  SFRPAGE = ACTIVE2_PAGE;
+                 if (output == '\n')
+                 {
+                    while (!TI1);
+                    TI1 = 0;
+                    SBUF1 = 0x0D;
+                 }
+                 while (!TI1);
+                 TI1 = 0;
+                 SBUF1 = output;
+                 SFRPAGE = SFRPAGE_save;
+              }
+              
+              
+              #endif
+ 658          
+ 659          //-----------------------------------------------------------------------------
+ 660          // End Of File
+ 661          //-----------------------------------------------------------------------------
+*** WARNING C294 IN LINE 356 OF main.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    372    ----
+   CONSTANT SIZE    =     35    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       6
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+C51 COMPILER V9.54   MAIN                                                                  04/02/2025 14:50:20 PAGE 12  
+
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  4 WARNING(S),  0 ERROR(S)

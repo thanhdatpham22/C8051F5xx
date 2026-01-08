@@ -1,0 +1,418 @@
+BL51 BANKED LINKER/LOCATER V6.22              04/18/2025  16:38:19  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
+C:\KEIL_V5\C51\BIN\BL51.EXE D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\B
+>> asic_C8051F5xx\SPI\main.obj, D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _D
+>> at\Basic_C8051F5xx\SPI\spi.obj, D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van
+>>  _Dat\Basic_C8051F5xx\SPI\config.obj, D:\TU BACK UP\CHANGE_DRIVE\Desktop\Ph
+>> am_Van _Dat\Basic_C8051F5xx\SPI\uart.obj, D:\TU BACK UP\CHANGE_DRIVE\Deskto
+>> p\Pham_Van _Dat\Basic_C8051F5xx\SPI\timer.obj TO D:\TU BACK UP\CHANGE_DRIVE
+>> \Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI\SPI_EPPROM RS (256) PL (68) PW (
+>> 78)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI\main.ob
+>> j (MAIN)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI\spi.obj
+>>  (SPI)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI\config.
+>> obj (CONFIG)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI\uart.ob
+>> j (UART)
+  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\SPI\timer.o
+>> bj (TIMER)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C_STARTUP)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C?IMUL)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (PRINTF)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C_INIT)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C?CLDPTR)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C?CLDOPTR)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C?CSTPTR)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C?PLDIIDATA)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (?C?CCASE)
+  C:\KEIL_V5\C51\LIB\C51S.LIB (PUTCHAR)
+
+
+LINK MAP OF MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8
+>> 051F5xx\SPI\SPI_EPPROM (MAIN)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     0015H     UNIT         _DATA_GROUP_
+            DATA    001DH     0002H     UNIT         ?DT?UART
+                    001FH     0001H                  *** GAP ***
+            BIT     0020H.0   0001H.1   UNIT         _BIT_GROUP_
+            BIT     0021H.1   0000H.1   UNIT         ?BI?UART
+                    0021H.2   0000H.6                *** GAP ***
+            IDATA   0022H     0001H     UNIT         ?STACK
+
+            * * * * * * *  X D A T A   M E M O R Y  * * * * * * *
+            XDATA   0000H     0040H     UNIT         ?XD?UART
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     008CH     UNIT         ?C_C51STARTUP
+            CODE    008FH     0004H     UNIT         ?PR?TIMER2_INIT?TIMER
+            CODE    0093H     0003H     ABSOLUTE     
+            CODE    0096H     035CH     UNIT         ?PR?PRINTF?PRINTF
+            CODE    03F2H     00A0H     UNIT         ?C?LIB_CODE
+            CODE    0492H     0043H     UNIT         ?PR?UART1_ISR?UART
+            CODE    04D5H     002AH     UNIT         ?PR?MAIN?MAIN
+BL51 BANKED LINKER/LOCATER V6.22            04/18/2025  16:38:19  PAGE 2
+
+
+            CODE    04FFH     0027H     UNIT         ?PR?PUTCHAR?PUTCHAR
+            CODE    0526H     0024H     UNIT         ?PR?UART1_INIT?UART
+            CODE    054AH     0024H     UNIT         ?PR?_DELAY_US?TIMER
+            CODE    056EH     001AH     UNIT         ?PR?PORT_INIT?CONFIG
+            CODE    0588H     0019H     UNIT         ?PR?_DELAY_MS?TIMER
+            CODE    05A1H     000EH     UNIT         ?PR?SYSCLK_INIT?CONFIG
+            CODE    05AFH     000BH     UNIT         ?PR?PCA0_INIT?CONFIG
+            CODE    05BAH     0006H     UNIT         ?C_INITSEG
+            CODE    05C0H     0005H     UNIT         ?CO?MAIN
+
+
+
+OVERLAY MAP OF MODULE:   D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basi
+>> c_C8051F5xx\SPI\SPI_EPPROM (MAIN)
+
+
+SEGMENT                           BIT_GROUP          DATA_GROUP 
+  +--> CALLED SEGMENT          START    LENGTH     START    LENGTH
+------------------------------------------------------------------
+?C_C51STARTUP                  -----    -----      -----    -----
+  +--> ?PR?MAIN?MAIN
+  +--> ?C_INITSEG
+
+?PR?MAIN?MAIN                  -----    -----      0008H    0001H
+  +--> ?PR?PCA0_INIT?CONFIG
+  +--> ?PR?PORT_INIT?CONFIG
+  +--> ?PR?SYSCLK_INIT?CONFIG
+  +--> ?PR?TIMER2_INIT?TIMER
+  +--> ?PR?UART1_INIT?UART
+  +--> ?CO?MAIN
+  +--> ?PR?PRINTF?PRINTF
+  +--> ?PR?_DELAY_MS?TIMER
+
+?PR?PRINTF?PRINTF              0020H.0  0001H.1    0009H    0014H
+  +--> ?PR?PUTCHAR?PUTCHAR
+
+?PR?_DELAY_MS?TIMER            -----    -----      -----    -----
+  +--> ?PR?_DELAY_US?TIMER
+
+
+
+UNRESOLVED EXTERNAL SYMBOLS:
+   SPI0_INIT
+
+
+
+SYMBOL TABLE OF MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basi
+>> c_C8051F5xx\SPI\SPI_EPPROM (MAIN)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+  -------         MODULE        MAIN
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  B:00A8H.7       PUBLIC        EA
+  D:00A7H         PUBLIC        SFRPAGE
+  C:04D5H         PUBLIC        main
+  -------         PROC          MAIN
+  -------         DO            
+  D:0008H         SYMBOL        i
+  -------         ENDDO         
+  C:04D5H         LINE#         15
+  C:04D5H         LINE#         16
+  C:04D5H         LINE#         18
+  C:04D8H         LINE#         19
+BL51 BANKED LINKER/LOCATER V6.22            04/18/2025  16:38:19  PAGE 3
+
+
+  C:04DBH         LINE#         20
+  C:04DEH         LINE#         21
+  C:04E1H         LINE#         22
+  C:04E4H         LINE#         23
+  C:04E7H         LINE#         24
+  C:04EAH         LINE#         25
+  C:04ECH         LINE#         26
+  C:04EFH         LINE#         27
+  C:04EFH         LINE#         28
+  C:04EFH         LINE#         29
+  C:04F8H         LINE#         30
+  C:04FDH         LINE#         31
+  -------         ENDPROC       MAIN
+  -------         ENDMOD        MAIN
+
+  -------         MODULE        SPI
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  -------         ENDMOD        SPI
+
+  -------         MODULE        CONFIG
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:00A7H         PUBLIC        SFRPAGE
+  D:00A5H         PUBLIC        P1MDOUT
+  D:00A6H         PUBLIC        P2MDOUT
+  D:00D9H         PUBLIC        PCA0MD
+  D:00C7H         PUBLIC        XBR2
+  D:00D4H         PUBLIC        P0SKIP
+  D:00D5H         PUBLIC        P1SKIP
+  D:00D6H         PUBLIC        P2SKIP
+  C:056EH         PUBLIC        PORT_Init
+  D:00A1H         PUBLIC        OSCICN
+  C:05A1H         PUBLIC        SYSCLK_Init
+  D:00EFH         PUBLIC        RSTSRC
+  C:05AFH         PUBLIC        PCA0_Init
+  -------         PROC          PORT_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:056EH         LINE#         5
+  C:056EH         LINE#         6
+  C:056EH         LINE#         7
+  C:0570H         LINE#         8
+  C:0573H         LINE#         10
+  C:0576H         LINE#         11
+  C:0579H         LINE#         12
+  C:057CH         LINE#         14
+  C:057FH         LINE#         15
+  C:0582H         LINE#         17
+  C:0585H         LINE#         19
+  C:0587H         LINE#         20
+  -------         ENDPROC       PORT_INIT
+  -------         PROC          PCA0_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:05AFH         LINE#         22
+  C:05AFH         LINE#         23
+  C:05AFH         LINE#         24
+  C:05B1H         LINE#         25
+  C:05B4H         LINE#         27
+  C:05B7H         LINE#         29
+  C:05B9H         LINE#         30
+  -------         ENDPROC       PCA0_INIT
+  -------         PROC          SYSCLK_INIT
+  -------         DO            
+BL51 BANKED LINKER/LOCATER V6.22            04/18/2025  16:38:19  PAGE 4
+
+
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:05A1H         LINE#         32
+  C:05A1H         LINE#         33
+  C:05A1H         LINE#         34
+  C:05A3H         LINE#         35
+  C:05A6H         LINE#         37
+  C:05A9H         LINE#         38
+  C:05ACH         LINE#         39
+  C:05AEH         LINE#         40
+  -------         ENDPROC       SYSCLK_INIT
+  -------         ENDMOD        CONFIG
+
+  -------         MODULE        UART
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:00E7H         PUBLIC        EIE2
+  D:00A7H         PUBLIC        SFRPAGE
+  D:001DH         SYMBOL        Byte
+  D:001EH         PUBLIC        UART1_Buffer_Size
+  X:0000H         PUBLIC        UART1_Buffer
+  D:0089H         PUBLIC        TMOD
+  C:0492H         PUBLIC        UART1_ISR
+  B:0098H.0       PUBLIC        RI1
+  D:008DH         PUBLIC        TH1
+  B:0098H.1       PUBLIC        TI1
+  D:008BH         PUBLIC        TL1
+  B:0088H.6       PUBLIC        TR1
+  D:0099H         PUBLIC        SBUF1
+  C:0526H         PUBLIC        UART1_Init
+  D:0098H         PUBLIC        SCON1
+  D:008EH         PUBLIC        CKCON
+  B:0021H.1       PUBLIC        UART1_Received_Full
+  -------         PROC          UART1_INIT
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:0526H         LINE#         15
+  C:0526H         LINE#         16
+  C:0526H         LINE#         17
+  C:0528H         LINE#         18
+  C:052BH         LINE#         20
+  C:052EH         LINE#         22
+  C:052EH         LINE#         23
+  C:052EH         LINE#         24
+  C:0531H         LINE#         25
+  C:0534H         LINE#         26
+  C:0537H         LINE#         27
+  C:0537H         LINE#         28
+  C:0537H         LINE#         29
+  C:0537H         LINE#         30
+  C:0537H         LINE#         31
+  C:0537H         LINE#         32
+  C:0537H         LINE#         33
+  C:0537H         LINE#         34
+  C:0537H         LINE#         35
+  C:0537H         LINE#         36
+  C:0537H         LINE#         37
+  C:0537H         LINE#         38
+  C:0537H         LINE#         40
+  C:0537H         LINE#         41
+  C:0537H         LINE#         42
+  C:0537H         LINE#         43
+  C:0537H         LINE#         44
+  C:0537H         LINE#         46
+  C:053AH         LINE#         47
+BL51 BANKED LINKER/LOCATER V6.22            04/18/2025  16:38:19  PAGE 5
+
+
+  C:053DH         LINE#         48
+  C:0540H         LINE#         49
+  C:0542H         LINE#         51
+  C:0544H         LINE#         52
+  C:0547H         LINE#         53
+  C:0549H         LINE#         54
+  -------         ENDPROC       UART1_INIT
+  -------         PROC          UART1_ISR
+  -------         DO            
+  D:0007H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:0492H         LINE#         56
+  C:049FH         LINE#         58
+  C:04A1H         LINE#         59
+  C:04A4H         LINE#         60
+  C:04A7H         LINE#         61
+  C:04A7H         LINE#         62
+  C:04AAH         LINE#         63
+  C:04B1H         LINE#         64
+  C:04B1H         LINE#         65
+  C:04BFH         LINE#         66
+  C:04C1H         LINE#         67
+  C:04C3H         LINE#         70
+  C:04C3H         LINE#         71
+  C:04C6H         LINE#         72
+  C:04C6H         LINE#         74
+  C:04C8H         LINE#         76
+  C:04C8H         LINE#         77
+  C:04CAH         LINE#         78
+  -------         ENDPROC       UART1_ISR
+  -------         ENDMOD        UART
+
+  -------         MODULE        TIMER
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:00A7H         PUBLIC        SFRPAGE
+  B:00C8H.7       PUBLIC        TF2H
+  D:00CCH         PUBLIC        TMR2
+  C:008FH         PUBLIC        TIMER2_Init
+  C:0588H         PUBLIC        _Delay_ms
+  C:054AH         PUBLIC        _Delay_us
+  B:00C8H.2       PUBLIC        TR2
+  D:008EH         PUBLIC        CKCON
+  -------         PROC          TIMER2_INIT
+  C:008FH         LINE#         6
+  C:008FH         LINE#         7
+  C:008FH         LINE#         9
+  C:0092H         LINE#         10
+  -------         ENDPROC       TIMER2_INIT
+  -------         PROC          _DELAY_US
+  D:0007H         SYMBOL        time_us
+  -------         DO            
+  D:0003H         SYMBOL        SFRPAGE_save
+  -------         ENDDO         
+  C:054AH         LINE#         11
+  C:054AH         LINE#         12
+  C:054AH         LINE#         13
+  C:054CH         LINE#         14
+  C:054FH         LINE#         16
+  C:0551H         LINE#         17
+  C:0553H         LINE#         18
+  C:0564H         LINE#         19
+  C:0566H         LINE#         20
+  C:0569H         LINE#         21
+  C:056BH         LINE#         23
+  C:056DH         LINE#         24
+BL51 BANKED LINKER/LOCATER V6.22            04/18/2025  16:38:19  PAGE 6
+
+
+  -------         ENDPROC       _DELAY_US
+  -------         PROC          _DELAY_MS
+  D:0001H         SYMBOL        time_ms
+  -------         DO            
+  D:0002H         SYMBOL        i
+  -------         ENDDO         
+  C:0588H         LINE#         25
+  C:058AH         LINE#         26
+  C:058AH         LINE#         29
+  C:0590H         LINE#         30
+  C:0590H         LINE#         31
+  C:0598H         LINE#         32
+  C:0598H         LINE#         33
+  C:059DH         LINE#         34
+  C:05A0H         LINE#         35
+  C:05A0H         LINE#         36
+  -------         ENDPROC       _DELAY_MS
+  -------         ENDMOD        TIMER
+
+  -------         MODULE        ?C?IMUL
+  C:03F2H         PUBLIC        ?C?IMUL
+  -------         ENDMOD        ?C?IMUL
+
+  -------         MODULE        PRINTF
+  D:0009H         PUBLIC        ?_PRINTF517?BYTE
+  D:0009H         PUBLIC        ?_PRINTF?BYTE
+  D:0009H         PUBLIC        ?_SPRINTF517?BYTE
+  D:0009H         PUBLIC        ?_SPRINTF?BYTE
+  C:00F8H         PUBLIC        _PRINTF
+  C:00F8H         PUBLIC        _PRINTF517
+  C:00F2H         PUBLIC        _SPRINTF
+  C:00F2H         PUBLIC        _SPRINTF517
+  -------         ENDMOD        PRINTF
+
+  -------         MODULE        ?C?CLDPTR
+  C:0404H         PUBLIC        ?C?CLDPTR
+  -------         ENDMOD        ?C?CLDPTR
+
+  -------         MODULE        ?C?CLDOPTR
+  C:041DH         PUBLIC        ?C?CLDOPTR
+  -------         ENDMOD        ?C?CLDOPTR
+
+  -------         MODULE        ?C?CSTPTR
+  C:044AH         PUBLIC        ?C?CSTPTR
+  -------         ENDMOD        ?C?CSTPTR
+
+  -------         MODULE        ?C?PLDIIDATA
+  C:045CH         PUBLIC        ?C?PLDIIDATA
+  -------         ENDMOD        ?C?PLDIIDATA
+
+  -------         MODULE        ?C?CCASE
+  C:046CH         PUBLIC        ?C?CCASE
+  -------         ENDMOD        ?C?CCASE
+
+  -------         MODULE        PUTCHAR
+  C:04FFH         PUBLIC        _PUTCHAR
+  -------         ENDMOD        PUTCHAR
+
+*** WARNING L1: UNRESOLVED EXTERNAL SYMBOL
+    SYMBOL:  SPI0_INIT
+    MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\
+>> SPI\main.obj (MAIN)
+
+*** WARNING L2: REFERENCE MADE TO UNRESOLVED EXTERNAL
+    SYMBOL:  SPI0_INIT
+BL51 BANKED LINKER/LOCATER V6.22            04/18/2025  16:38:19  PAGE 7
+
+
+    MODULE:  D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\
+>> SPI\main.obj (MAIN)
+    ADDRESS: 04E8H
+
+Program Size: data=33.2 xdata=64 code=1477
+LINK/LOCATE RUN COMPLETE.  2 WARNING(S),  0 ERROR(S)

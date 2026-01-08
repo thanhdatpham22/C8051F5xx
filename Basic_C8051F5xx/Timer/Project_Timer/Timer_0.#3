@@ -1,0 +1,36 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h>
+#include "Timer_0.h"
+
+unsigned long count = 0;
+
+
+void _CONFIG_TIMER0(void)
+{
+	TMOD |= 0x02;
+	CKCON = 0x01;           // Timer0 uses a 1:48 prescaler
+	TH0 = 254;     		// Init Timer0 High register
+   	TL0 = 254;     		// Init Timer0 Low register
+      	
+   	ET0 = 1;                // Timer0 interrupt enabled
+	TCON = 0x10;            // Timer0 ON
+			                   
+}
+
+INTERRUPT(Timer0_ISR, INTERRUPT_TIMER0)
+{
+}
+
+void delay_t0_us(unsigned long us)
+{	
+	unsigned long i;
+	_CONFIG_TIMER0();
+	
+	for(i = 0 ; i <us; i++)
+	{
+		TF0 = 0;
+		while (!TF0); 
+		
+	}
+	TR0 = 0;
+} 

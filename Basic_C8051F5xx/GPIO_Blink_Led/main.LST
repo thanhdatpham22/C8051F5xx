@@ -1,0 +1,112 @@
+C51 COMPILER V9.54   MAIN                                                                  03/21/2025 11:54:10 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe main.c DB OE BR INCDIR(c:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          #include <compiler_defs.h>             // Compiler declarations
+   2          #include <C8051F580_defs.h>  
+   3                   
+   4          #define SYSCLK  24000000/8
+   5          
+   6          SBIT (LEDYELLOW, SFR_P2, 0);
+   7          SBIT (LEDGREEN, SFR_P2, 1);
+   8          SBIT (LEDRED, SFR_P2, 2);
+   9          
+  10          void OSCILLATOR_Init(void);
+  11          void PORT_Init(void);
+  12          void TIMER2_Init (U16 counts);
+  13          
+  14          void TIMER1_Init (void);
+  15          static int count  = 0;
+  16          static int led_state = 0;
+  17          
+  18          void main()
+  19          
+  20          {
+  21   1              SFRPAGE = ACTIVE_PAGE;
+  22   1              PCA0MD &= ~0x40;
+  23   1      
+  24   1              OSCILLATOR_Init();
+  25   1              PORT_Init();
+  26   1              TIMER2_Init(SYSCLK /12 /10);
+  27   1      
+  28   1              EA =1;
+  29   1              while(1);
+  30   1      
+  31   1      }
+  32          
+  33          void OSCILLATOR_Init(void)
+  34          {
+  35   1              U8 SFRPAGE_save = SFRPAGE;
+  36   1         SFRPAGE = CONFIG_PAGE;
+  37   1      
+  38   1         OSCICN = 0x84;
+  39   1      
+  40   1         SFRPAGE = SFRPAGE_save;      
+  41   1      }
+  42          
+  43          void PORT_Init (void)
+  44          {
+  45   1         U8 SFRPAGE_save = SFRPAGE;
+  46   1         SFRPAGE = CONFIG_PAGE;
+  47   1      
+  48   1         P2MDOUT |= 0x07;                    
+  49   1         P2SKIP  |= 0xFF;                    
+  50   1         XBR2     = 0x40;                    
+  51   1      
+  52   1         SFRPAGE = SFRPAGE_save;
+  53   1      }
+  54          
+  55          void TIMER2_Init (U16 counts)
+C51 COMPILER V9.54   MAIN                                                                  03/21/2025 11:54:10 PAGE 2   
+
+  56          {
+  57   1         U8 SFRPAGE_save = SFRPAGE;
+  58   1         SFRPAGE = ACTIVE_PAGE;
+  59   1      
+  60   1         TMR2CN  = 0x00;                     // Stop Timer2; Clear TF2;
+  61   1                                             // use SYSCLK/12 as timebase
+  62   1         CKCON  &= ~0x60;                    // Timer2 clocked based on T2XCLK;
+  63   1      
+  64   1         TMR2RL  = -counts;                  // Init reload values
+  65   1         TMR2    = 0xFFFF;                   // Set to reload immediately
+  66   1         ET2     = 1;                        // Enable Timer2 interrupts
+  67   1         TR2     = 1;                        // Start Timer2
+  68   1      
+  69   1         SFRPAGE = SFRPAGE_save;
+  70   1      }
+  71          
+  72          
+  73          INTERRUPT(Timer2_ISR, INTERRUPT_TIMER2)
+  74          {
+  75   1         TF2H = 0;                           // Clear Timer2 interrupt flag
+  76   1         count++;
+  77   1         if(count >= 1000)
+  78   1         {
+  79   2                      LEDYELLOW =!LEDYELLOW;
+  80   2                      
+  81   2         }          
+  82   1              if(count >= 2000)
+  83   1              {
+  84   2                      LEDGREEN = !LEDGREEN;
+  85   2                      count = 0;
+  86   2              }          // Change state of LED
+  87   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    136    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,88 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h> 
+
+#define BAUDRATE 		115200
+#define SYSCLK      	24000000   
+
+#define UART1_BUFFERSIZE 64
+
+SEGMENT_VARIABLE(UART1_Buffer[UART1_BUFFERSIZE], U8, SEG_XDATA);
+U8 UART1_Buffer_Size = 0;
+bit UART1_Received_Full = 0; 
+static U8 Byte;
+
+
+void UART1_Init (void)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE2_PAGE;
+
+   SCON1 = 0x10;                       // SCON1: 8-bit variable bit rate
+
+   if (SYSCLK / BAUDRATE / 2 / 256 < 1) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2);
+      CKCON &= ~0x0B;                  // T1M = 1; SCA1:0 = xx
+      CKCON |=  0x08;
+   } 
+   else if (SYSCLK / BAUDRATE / 2 / 256 < 4) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 4);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 01
+      CKCON |=  0x01;
+   } 
+   else if (SYSCLK / BAUDRATE / 2 / 256 < 12) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 12);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 00
+   } 
+   else 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 48);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 10
+      CKCON |=  0x02;
+   }
+
+    TL1 = TH1;                          // Init Timer1
+    TMOD &= ~0xF0;                      // TMOD: timer 1 in 8-bit autoreload
+    TMOD |=  0x20;
+    TR1 = 1;                            // START Timer1
+
+    TI1 = 1;                            // Indicate TX0 ready (SCON1)
+	EIE2 |= 0x08;
+    SFRPAGE = SFRPAGE_save;
+}
+
+INTERRUPT(UART1_ISR, INTERRUPT_UART1)
+{ 
+	U8 SFRPAGE_save = SFRPAGE;
+    SFRPAGE = ACTIVE2_PAGE;
+	if (RI1 == 1)
+    {
+	    Byte = SBUF1;                    
+	    if (UART1_Buffer_Size < UART1_BUFFERSIZE)
+	    {
+	       UART1_Buffer[UART1_Buffer_Size] = Byte; // Store in array
+	       UART1_Buffer_Size++;	 		 
+	    }
+
+		else
+		{
+			UART1_Buffer_Size = 0;
+		}
+
+		RI1 = 0;  
+		     
+    }
+	SFRPAGE = SFRPAGE_save;
+}
+char putchar(char c)
+{
+    SFRPAGE = ACTIVE2_PAGE;
+
+    while (!TI1);   // Ch? d?n khi truy?n xong
+    TI1 = 0;
+    SBUF1 = c;
+
+    return c;
+}

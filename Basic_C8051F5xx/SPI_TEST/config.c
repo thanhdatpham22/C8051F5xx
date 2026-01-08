@@ -1,0 +1,60 @@
+
+#include <compiler_defs.h>
+#include <C8051F580_defs.h> 
+
+
+void PCA0_Init (void)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   PCA0MD   &= ~0x40;
+
+   SFRPAGE = SFRPAGE_save;
+}
+void SYSCLK_Init (void)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = CONFIG_PAGE;
+
+   OSCICN |= 0x87;                    
+                                       
+   RSTSRC  = 0x04;                     
+
+   SFRPAGE = SFRPAGE_save;
+}
+
+void PORT_Init (void)
+{
+
+	//P0.6 CANTX pushpull, digital
+	//P0.7 CANRX opendrain, digital
+	//P1.3 UART1 pushpull, digital
+	//P1.4 UART1 opendrain, digital
+	//P2.0 LED YELLOW
+	//P2.1 LED GREEN
+	//P2.2 LED RED
+    U8 SFRPAGE_save = SFRPAGE;
+    SFRPAGE = CONFIG_PAGE;
+
+	/*P0MDOUT   = 0x40; 
+	P0SKIP  = 0x3F;  
+
+    P1MDOUT |= 0x08; //UART1 P1.3 TX push pull     
+	P1SKIP = 0x07;						
+
+	P2MDOUT |= 0x03;  //LED P2.0, P2.1 , P2.2                 
+    P2SKIP  |= 0x03
+	;
+	XBR0     = 0x02; //Enable crossbar CAN
+    XBR2    = 0x42;   */                  
+    P0MDOUT   = 0x74;
+    P1MDOUT   = 0x08;
+    P0SKIP    = 0x03;
+    P1SKIP    = 0x07;
+	P2MDOUT |= 0x03;  //LED P2.0, P2.1 , P2.2                 
+    P2SKIP  |= 0x03;
+    XBR0      = 0x06;
+    XBR2      = 0x42;               	                    
+    SFRPAGE = SFRPAGE_save;
+}

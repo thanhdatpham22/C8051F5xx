@@ -1,0 +1,217 @@
+C51 COMPILER V9.54   MAIN                                                                  03/24/2025 16:47:55 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe main.c DB OE BR INCDIR(C:\SiLabs\MCU_2\Inc)
+
+line level    source
+
+   1          //-----------------------------------------------------------------------------
+   2          // F580_Timer0_13bitReloadTimer.c
+   3          //-----------------------------------------------------------------------------
+   4          // Copyright (C) 2008 Silicon Laboratories, Inc.
+   5          // http://www.silabs.com
+   6          //
+   7          // Program Description:
+   8          //
+   9          // This program flashes the green LED on the C8051F580 target board about
+  10          // once a second using the interrupt handler for Timer0.
+  11          //
+  12          //
+  13          // How To Test:
+  14          //
+  15          // 1) Download code to the 'F580 target board
+  16          // 2) Ensure that the P1.3 pins are shorted together on the J19 header
+  17          // 3) Run the program.  If the LED flashes, the program is working
+  18          //
+  19          //
+  20          // Target:         C8051F580 (Side A of a C8051F580-TB)
+  21          // Tool chain:     Keil C51 8.0 / Keil EVAL C51
+  22          // Command Line:   None
+  23          //
+  24          // Release 1.0 / 21 JUL 2008 (ADT)
+  25          //    - Initial Revision
+  26          //
+  27          //-----------------------------------------------------------------------------
+  28          // Includes
+  29          //-----------------------------------------------------------------------------
+  30          #include <si_toolchain.h>
+  31          #include <compiler_defs.h>
+  32          #include <C8051F580_defs.h>            // SFR declarations
+  33          
+  34          //-----------------------------------------------------------------------------
+  35          // Global Constants
+  36          //-----------------------------------------------------------------------------
+  37          
+  38          #define SYSCLK       24000000/8        // SYSCLK frequency in Hz
+  39          
+  40          #define BLINK_RATE   8                 // Number of 131.072 ms intervals 
+  41                                                 // between toggling the LED pin
+  42                                                 // 8 intervals is about 1 per second
+  43          
+  44          //-----------------------------------------------------------------------------
+  45          // Pin Definitions
+  46          //-----------------------------------------------------------------------------
+  47          
+  48          SBIT (LED, SFR_P2, 0);                 // LED==1 means ON
+  49          
+  50          //-----------------------------------------------------------------------------
+  51          // Function Prototypes
+  52          //-----------------------------------------------------------------------------
+  53          
+  54          void OSCILLATOR_Init (void);           
+  55          void PORT_Init (void);                 
+C51 COMPILER V9.54   MAIN                                                                  03/24/2025 16:47:55 PAGE 2   
+
+  56          void TIMER0_Init (void);               
+  57          
+  58          INTERRUPT_PROTO (Timer0_ISR, INTERRUPT_TIMER0);
+  59          
+  60          //-----------------------------------------------------------------------------
+  61          // main() Routine
+  62          //-----------------------------------------------------------------------------
+  63          
+  64          void main (void)
+  65          {
+  66   1         SFRPAGE = ACTIVE_PAGE;              // Set SFRPAGE for PCA0MD
+  67   1      
+  68   1         PCA0MD &= ~0x40;                    // Disable the watchdog timer
+  69   1      
+  70   1         OSCILLATOR_Init ();                 // Configure system clock
+  71   1         PORT_Init ();                       // Initialize crossbar
+  72   1         TIMER0_Init ();                     // Initialize Timer0
+  73   1      
+  74   1         EA = 1;                             // Enable global interrupts
+  75   1      
+  76   1         while (1);                          // Spin forever
+  77   1      }
+  78          
+  79          //-----------------------------------------------------------------------------
+  80          // Initialization Subroutines
+  81          //-----------------------------------------------------------------------------
+  82          
+  83          //-----------------------------------------------------------------------------
+  84          // OSCILLATOR_Init
+  85          //-----------------------------------------------------------------------------
+  86          //
+  87          // Return Value:  None
+  88          // Parameters:    None
+  89          //
+  90          // Configure the internal oscillator to maximum internal frequency / 8, which
+  91          // is 3 MHz
+  92          //
+  93          //-----------------------------------------------------------------------------
+  94          void OSCILLATOR_Init (void)
+  95          {
+  96   1         U8 SFRPAGE_save = SFRPAGE;
+  97   1         SFRPAGE = CONFIG_PAGE;
+  98   1      
+  99   1         OSCICN = 0x84;                      // Internal freq / 8
+ 100   1      
+ 101   1         SFRPAGE = SFRPAGE_save;
+ 102   1      }
+ 103          
+ 104          //-----------------------------------------------------------------------------
+ 105          // PORT_Init
+ 106          //-----------------------------------------------------------------------------
+ 107          //
+ 108          // Return Value:  None
+ 109          // Parameters:    None
+ 110          //
+ 111          // Configure the Crossbar and GPIO ports.
+ 112          //
+ 113          // P1.3 - digital  push-pull   LED
+ 114          //
+ 115          //-----------------------------------------------------------------------------
+ 116          void PORT_Init (void)
+ 117          {
+C51 COMPILER V9.54   MAIN                                                                  03/24/2025 16:47:55 PAGE 3   
+
+ 118   1         U8 SFRPAGE_save = SFRPAGE;
+ 119   1         SFRPAGE = CONFIG_PAGE;
+ 120   1      
+ 121   1         P2MDOUT |= 0x01;                    // Enable LED as a push-pull output
+ 122   1         P2SKIP  |= 0x01;                    // Skip the LED pin on the crossbar
+ 123   1      
+ 124   1         XBR2     = 0x40;                    // Enable crossbar and weak pull-ups
+ 125   1      
+ 126   1         SFRPAGE = SFRPAGE_save;
+ 127   1      }
+ 128          
+ 129          //-----------------------------------------------------------------------------
+ 130          // TIMER0_Init
+ 131          //-----------------------------------------------------------------------------
+ 132          //
+ 133          // Return Value : None
+ 134          // Parameters   : None
+ 135          //
+ 136          // Configure Timer0 to 13-bit mode (mode 0) and generate an interrupt
+ 137          // every 8192 Timer0 cycles using SYSCLK/48 as the Timer0 time base.
+ 138          //
+ 139          // With the system clock at 3 MHz, the Timer0 time base is 62.5 kHz.  Timer0
+ 140          // will overflow every 131.072 ms
+ 141          //
+ 142          //-----------------------------------------------------------------------------
+ 143          void TIMER0_Init(void)
+ 144          {
+ 145   1         // No need to set SFRPAGE as all registers accessed in this function
+ 146   1         // are available on all pages
+ 147   1      
+ 148   1         TH0 = 0x00;                         // Init Timer0 reload register
+ 149   1         TL0 = 0x00;                         // Set the intial Timer0 value
+ 150   1         
+ 151   1         TMOD  = 0x00;                       // Timer0 in 13-bit mode
+ 152   1         CKCON = 0x02;                       // Timer0 uses a 1:48 prescaler
+ 153   1         ET0   = 1;                          // Timer0 interrupt enabled
+ 154   1         TCON  = 0x10;                       // Timer0 ON
+ 155   1      }
+ 156          
+ 157          
+ 158          //-----------------------------------------------------------------------------
+ 159          // Interrupt Service Routines
+ 160          //-----------------------------------------------------------------------------
+ 161          
+ 162          
+ 163          //-----------------------------------------------------------------------------
+ 164          // Timer0_ISR
+ 165          //-----------------------------------------------------------------------------
+ 166          //
+ 167          // This routine changes the state of the LED whenever Timer0 overflows.
+ 168          //
+ 169          //-----------------------------------------------------------------------------
+ 170          
+ 171          INTERRUPT(Timer0_ISR, INTERRUPT_TIMER0)
+ 172          {
+ 173   1         // The Timer0 interrupt flag is automatically cleared by vectoring to
+ 174   1         // the Timer0 ISR
+ 175   1      
+ 176   1         static U8 count = 0;
+ 177   1         count++;                            // Increment when an interrupt occurs
+ 178   1      
+ 179   1         if (count == BLINK_RATE)
+C51 COMPILER V9.54   MAIN                                                                  03/24/2025 16:47:55 PAGE 4   
+
+ 180   1         {
+ 181   2            LED = !LED;                      // Change state of LED
+ 182   2            count = 0;                       // Clear the counter
+ 183   2         }
+ 184   1      }
+ 185          
+ 186          //-----------------------------------------------------------------------------
+ 187          // End Of File
+ 188          //-----------------------------------------------------------------------------
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     84    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

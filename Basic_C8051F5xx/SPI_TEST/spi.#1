@@ -1,0 +1,118 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h> 
+
+#include "timer.h"
+#include "spi.h"
+#define BAUDRATE           115200      // Baud rate of UART in bps
+#define SYSCLK             24000000 
+
+
+
+void SPI0_Init()
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   SPI0CFG   = 0x40;                   // Enable the SPI as a Master
+                                       // CKPHA = '0', CKPOL = '0'
+
+   SPI0CN    = 0x0D;                   // 4-wire, single master mode
+                                       // SPI0 enable
+
+   // The equation for SPI0CKR is (SYSCLK/(2*F_SCK_MAX))-1, but this yields
+   // a SPI frequency that is slightly more than 2 MHz. But, 2 MHz is the max
+   // frequency spec of the EEPROM used here. So, the "-1" term is omitted
+   // in the following usage:
+   SPI0CKR   = (SYSCLK / (2 * F_SCK_MAX));
+
+   SFRPAGE = SFRPAGE_save;
+}
+void EEPROM_Write (U16 address, U8 value)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   // Writing a byte to the EEPROM is a five-step operation.
+
+   // Step1: Set the Write Enable Latch to 1
+   NSSMD0   = 0;                       // Step1.1: Activate Slave Select
+   SPI0DAT  = EEPROM_CMD_WREN;         // Step1.2: Send the WREN command
+   while (!SPIF);                      // Step1.3: Wait for end of transfer
+   SPIF     = 0;                       // Step1.4: Clear the SPI intr. flag
+   NSSMD0   = 1;                       // Step1.5: Deactivate Slave Select
+   Delay_us (1);                       // Step1.6: Wait for at least
+                                       //          T_NSS_DISABLE_MIN
+   // Step2: Send the WRITE command
+   NSSMD0   = 0;
+   SPI0DAT  = EEPROM_CMD_WRITE;
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step3: Send the EEPROM destination address (MSB first)
+   SPI0DAT  = (U8)((address >> 8) & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+   SPI0DAT  = (U8)(address & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step4: Send the value to write
+   SPI0DAT  = value;
+   while (!SPIF);
+   SPIF     = 0;
+   NSSMD0   = 1;
+   Delay_us (1);
+
+   // Step5: Poll on the Write In Progress (WIP) bit in Read Status Register
+   do
+   {
+      NSSMD0   = 0;                    // Activate Slave Select
+      SPI0DAT  = EEPROM_CMD_RDSR;      // Send the Read Status Register command
+      while (!SPIF);                   // Wait for the command to be sent out
+      SPIF     = 0;
+      SPI0DAT  = 0;                    // Dummy write to output serial clock
+      while (!SPIF);                   // Wait for the register to be read
+      SPIF     = 0;
+      NSSMD0   = 1;                    // Deactivate Slave Select after read
+      Delay_us (1);
+   } while((SPI0DAT & 0x01) == 0x01);
+
+   SFRPAGE = SFRPAGE_save;
+}
+
+U8 EEPROM_Read (U16 address)
+{
+   U8 spi_data;
+
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   // Reading a byte from the EEPROM is a three-step operation.
+
+   // Step1: Send the READ command
+   NSSMD0   = 0;                       // Activate Slave Select
+   SPI0DAT  = EEPROM_CMD_READ;
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step2: Send the EEPROM source address (MSB first)
+   SPI0DAT  = (U8)((address >> 8) & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+   SPI0DAT  = (U8)(address & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step3: Read the value returned
+   SPI0DAT  = 0;                       // Dummy write to output serial clock
+   while (!SPIF);                      // Wait for the value to be read
+   SPIF     = 0;
+   NSSMD0   = 1;                       // Deactivate Slave Select
+   Delay_us (1);
+
+   spi_data = SPI0DAT;                 // Read data before restoring SFR page
+
+   SFRPAGE = SFRPAGE_save;
+
+   return spi_data;
+}

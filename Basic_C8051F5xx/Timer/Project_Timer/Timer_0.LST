@@ -1,0 +1,63 @@
+C51 COMPILER V9.54   TIMER_0                                                               04/24/2025 13:39:01 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE TIMER_0
+OBJECT MODULE PLACED IN Timer_0.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe Timer_0.c DB OE BR INCDIR(c:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          #include <compiler_defs.h>
+   2          #include <C8051F580_defs.h>
+   3          #include "Timer_0.h"
+*** WARNING C323 IN LINE 22 OF Timer_0.h: newline expected, extra characters found
+   4          
+   5          static unsigned long count = 0;
+   6          
+   7          
+   8          void _CONFIG_TIMER0(void)
+   9          {
+  10   1              TMOD |= 0x02;
+  11   1              CKCON = 0x01;           // Timer0 uses a 1:48 prescaler
+  12   1              TH0 = 254;              // Init Timer0 High register
+  13   1              TL0 = 254;              // Init Timer0 Low register
+  14   1              
+  15   1              ET0 = 1;                // Timer0 interrupt enabled
+  16   1              TCON = 0x10;            // Timer0 ON
+  17   1                                                 
+  18   1      }
+  19          
+  20          INTERRUPT(Timer0_ISR, INTERRUPT_TIMER0)
+  21          {
+  22   1              //TH0 = ((8191 - 500) >>5) &0xFF;       // Init Timer0 High register
+  23   1              //TL0 = (8191 - 500) & 0x1F;                            // Init Timer0 Low register
+  24   1              //count++;
+  25   1      }
+  26          
+  27          void delay_t0_us(unsigned long us)
+  28          {       
+  29   1              unsigned long i;
+  30   1              _CONFIG_TIMER0();
+  31   1              
+  32   1              for(i = 0 ; i <us; i++)
+  33   1              {
+  34   2                      TF0 = 0;
+  35   2                      while (!TF0); 
+  36   2                      
+  37   2              }
+  38   1              TR0 = 0;
+  39   1      } 
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     92    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,28 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h>
+
+static unsigned long count = 0;
+
+void _CONFIG_TIMER1(void)
+{
+	CKCON &= ~0x08;        // Timer1 dùng SYSCLK/12
+    TMOD &= ~0xF0;         // Clear Timer1 bits
+    TMOD |= 0x10;          // Timer1 Mode 1 (16-bit)
+
+	TH1 = (65536 - 500) >>8;
+	TL1 = (65536 - 500) & 0xFF;
+	ET1 = 1;
+	TCON = 0x40;
+}
+
+INTERRUPT (TIMER1_ISR, INTERRUPT_TIMER1)
+{
+    TH1 = (65536 - 500) >>8;
+	TL1 = (65536 - 500) & 0xFF;
+	count++;
+}
+void delay_t1_ms(unsigned long ms)
+{
+	unsigned long start = count;
+	while((count - start ) < ms);
+}

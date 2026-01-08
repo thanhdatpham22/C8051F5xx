@@ -1,0 +1,6 @@
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\main.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Timer_0.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\config.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Timer_1.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Timer_2.obj",
+"D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Timer_3.obj"  TO "D:\TU BACK UP\CHANGE_DRIVE\Desktop\Pham_Van _Dat\Basic_C8051F5xx\Timer\Project_Timer\Driver_Timer" RS(256) PL(68) PW(78) 

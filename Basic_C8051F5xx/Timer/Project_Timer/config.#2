@@ -1,0 +1,30 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h>
+
+void OSCILLATOR_Init(void)
+{
+	U8 SFRPAGE_save = SFRPAGE;
+	SFRPAGE = CONFIG_PAGE;
+	OSCICN = 0x84; // CLK 24MHz/8
+	SFRPAGE = SFRPAGE_save;
+}
+
+void PORT_Init(void)
+{
+	U8 SFRPAGE_save = SFRPAGE;
+	SFRPAGE   = CONFIG_PAGE;
+    P2MDOUT   = 0x07; //LED 2.0,2.1,2.2 enable
+    P0SKIP    = 0xFF;
+    P1SKIP    = 0xFF;
+    XBR2      = 0x40;
+    SFRPAGE   = SFRPAGE_save;
+}
+
+void WATCH_DOG_Init(void)
+{
+	U8 SFRPAGE_save = SFRPAGE;
+	SFRPAGE   = ACTIVE_PAGE;
+	PCA0MD &= ~0x40;
+	SFRPAGE   = SFRPAGE_save;
+
+}

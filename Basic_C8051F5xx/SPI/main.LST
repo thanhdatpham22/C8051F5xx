@@ -1,0 +1,60 @@
+C51 COMPILER V9.54   MAIN                                                                  04/18/2025 16:38:18 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe main.c DB OE BR INCDIR(C:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          #include<stdio.h>
+   2          #include <compiler_defs.h>
+   3          #include <C8051F580_defs.h>            // SFR declarations
+   4          
+   5          #include "config.h"
+*** WARNING C323 IN LINE 6 OF config.h: newline expected, extra characters found
+   6          #include "timer.h"
+*** WARNING C323 IN LINE 10 OF timer.h: newline expected, extra characters found
+   7          #include "uart.h"
+*** WARNING C323 IN LINE 7 OF uart.h: newline expected, extra characters found
+   8          #include "spi.h"
+*** WARNING C323 IN LINE 4 OF spi.h: newline expected, extra characters found
+   9          
+  10          #define UART1_BUFFERSIZE 64
+  11          extern SEGMENT_VARIABLE(UART1_Buffer[UART1_BUFFERSIZE], U8, SEG_XDATA);
+  12          
+  13          
+  14             
+  15          void main(void)
+  16          {
+  17   1              U8 i;
+  18   1              SFRPAGE = ACTIVE_PAGE;
+  19   1              PCA0_Init ();
+  20   1          PORT_Init ();
+  21   1              SYSCLK_Init ();
+  22   1          TIMER2_Init ();
+  23   1          UART1_Init ();
+  24   1          SPI0_Init ();
+  25   1              EA = 1;
+  26   1              SFRPAGE = ACTIVE2_PAGE;
+  27   1              while(1)
+  28   1              {
+  29   2                      printf("ok\r\n");
+  30   2                      Delay_ms(1000);
+  31   2              }
+  32   1      }
+*** WARNING C280 IN LINE 17 OF main.c: 'i': unreferenced local variable
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     42    ----
+   CONSTANT SIZE    =      5    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  5 WARNING(S),  0 ERROR(S)

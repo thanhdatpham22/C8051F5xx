@@ -1,0 +1,63 @@
+C51 COMPILER V9.54   CONFIG                                                                04/18/2025 16:38:19 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE CONFIG
+OBJECT MODULE PLACED IN config.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe config.c DB OE BR INCDIR(C:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          #include <compiler_defs.h>
+   2          #include <C8051F580_defs.h> 
+   3          
+   4          
+   5          void PORT_Init (void)
+   6          {
+   7   1         U8 SFRPAGE_save = SFRPAGE;
+   8   1         SFRPAGE = CONFIG_PAGE;
+   9   1      
+  10   1          P1MDOUT |= 0x08;                    // Enable UART1 TX as push-pull output
+  11   1          P0SKIP  = 0xFF;                     // Skip to P0, and P1.1,2,3
+  12   1              P1SKIP = 0xE7;                                          // Enable UART1 on P1.3(TX) and P1.4(RX)
+  13   1      
+  14   1              P2MDOUT |= 0x03;                    // Enable LED as a push-pull output
+  15   1          P2SKIP  |= 0xFC;
+  16   1              //XBR0      = 0x04;
+  17   1          XBR2    = 0x42;                     
+  18   1                                             // Enable crossbar and weak pull-ups
+  19   1          SFRPAGE = SFRPAGE_save;
+  20   1      }
+  21          
+  22          void PCA0_Init (void)
+  23          {
+  24   1          U8 SFRPAGE_save = SFRPAGE;
+  25   1          SFRPAGE = ACTIVE_PAGE;
+  26   1      
+  27   1          PCA0MD   &= ~0x40;
+  28   1      
+  29   1          SFRPAGE = SFRPAGE_save;
+  30   1      }
+  31          
+  32          void SYSCLK_Init(void)
+  33          {
+  34   1              U8 SFRPAGE_save = SFRPAGE;
+  35   1          SFRPAGE = CONFIG_PAGE;
+  36   1      
+  37   1          OSCICN   |= 0x87;
+  38   1              RSTSRC  = 0x04;
+  39   1          SFRPAGE = SFRPAGE_save;
+  40   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     51    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

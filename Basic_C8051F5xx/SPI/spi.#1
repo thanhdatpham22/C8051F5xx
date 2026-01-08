@@ -1,0 +1,8 @@
+#include <compiler_defs.h>
+#include <C8051F580_defs.h>            // SFR declarations
+
+
+void PORT_Init(void);
+void CKL_Init(void);
+void SPI0_Init(void);
+

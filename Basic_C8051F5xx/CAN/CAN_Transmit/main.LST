@@ -1,0 +1,278 @@
+C51 COMPILER V9.54   MAIN                                                                  04/04/2025 14:56:41 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe main.c DB OE BR INCDIR(C:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          //-----------------------------------------------------------------------------
+   2          // Includes
+   3          //-----------------------------------------------------------------------------
+   4          
+   5          #include <compiler_defs.h>
+   6          #include <C8051F580_defs.h>        // SFR declarations
+   7          
+   8          //-----------------------------------------------------------------------------
+   9          // Function Prototypes
+  10          //-----------------------------------------------------------------------------
+  11          
+  12          void OSCILLATOR_Init (void);
+  13          void PORT_Init (void);
+  14          void CAN0_Init (void);
+  15          void Timer0_Init(void);
+  16          void delay_ms(unsigned int ms);
+  17          void CAN0_Transmit_Polling(void);
+  18          //INTERRUPT_PROTO(CAN0_ISR, INTERRUPT_CAN0);
+  19          
+  20          //-----------------------------------------------------------------------------
+  21          // Global Constants
+  22          //-----------------------------------------------------------------------------
+  23          
+  24          #define SYSCLK       24000000          // System clock speed in Hz
+  25          
+  26          #define MESSAGE_OBJECTS    1          // Number of message objects to use
+  27                                                 // Range is 1-32
+  28          #define MESSAGE_SIZE        8          // Size in bytes of each CAN message
+  29                                                 // Range is 1-8
+  30          
+  31          
+  32          
+  33          //-----------------------------------------------------------------------------
+  34          // Bit Definition Masks
+  35          //-----------------------------------------------------------------------------
+  36          
+  37          // CAN0STAT
+  38          #define BOff  0x80                     // Busoff Status
+  39          #define EWarn 0x40                     // Warning Status
+  40          #define EPass 0x20                     // Error Passive
+  41          #define RxOk  0x10                     // Receive Message Successfully
+  42          #define TxOk  0x08                     // Transmitted Message Successfully
+  43          #define LEC   0x07                     // Last Error Code
+  44          
+  45          //-----------------------------------------------------------------------------
+  46          // Pin Definitions
+  47          //-----------------------------------------------------------------------------
+  48          
+  49          SBIT(LED, SFR_P2, 0);                 // LED = 1 turns on the LED
+  50          
+  51          //-----------------------------------------------------------------------------
+  52          // Global Variables
+  53          //-----------------------------------------------------------------------------
+  54          
+  55          bit CAN_ERROR = 0;                     // 0 == No Errors during transmission
+C51 COMPILER V9.54   MAIN                                                                  04/04/2025 14:56:41 PAGE 2   
+
+  56                                                 // 1 == Some error(s) occurred
+  57          U8 buffer[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,};
+  58          
+  59          U8 obj_num;                    // Message object counter
+  60          volatile unsigned long timeout_counter = 0;
+  61          //-----------------------------------------------------------------------------
+  62          // SiLabs_Startup() Routine
+  63          // ----------------------------------------------------------------------------
+  64          //-----------------------------------------------------------------------------
+  65          void SiLabs_Startup (void)
+  66          {
+  67   1         PCA0MD &= ~0x40;                    // Disable Watchdog Timer
+  68   1      }
+  69          
+  70          //-----------------------------------------------------------------------------
+  71          // MAIN Routine
+  72          //-----------------------------------------------------------------------------
+  73          
+  74          void main (void)
+  75          {
+  76   1         SFRPAGE = ACTIVE_PAGE;             // Set for PCA0MD
+  77   1              
+  78   1              SiLabs_Startup();
+  79   1         OSCILLATOR_Init ();                 // Initialize oscillator
+  80   1         PORT_Init ();                       // Initialize crossbar and GPIO
+  81   1         CAN0_Init ();                                                // Start CAN peripheral
+  82   1         Timer0_Init();                       
+  83   1         
+  84   1      
+  85   1         //EIE2 |= 0x02;                       // Enable CAN interupts
+  86   1         //IE_EA = 1;                          // Enable global interrupts
+  87   1         EIE2 &= ~0x02;                     // Disable CAN interrupts
+  88   1         EA = 1;                         // Disable global interrupts
+  89   1      
+  90   1         CAN_ERROR = 0;
+  91   1         //LED = 0;
+  92   1      
+  93   1      
+  94   1         while (1)
+  95   1           {
+  96   2      
+  97   2               CAN0_Transmit_Polling();
+  98   2                       LED = !LED;
+  99   2                       delay_ms(1000);
+ 100   2           }
+ 101   1      
+ 102   1      }
+ 103          void OSCILLATOR_Init (void)
+ 104          {
+ 105   1         U8 SFRPAGE_save = SFRPAGE;
+ 106   1         SFRPAGE = CONFIG_PAGE;
+ 107   1      
+ 108   1         OSCICN = 0x87;                      // Set internal oscillator divider to 1
+ 109   1      
+ 110   1         SFRPAGE = SFRPAGE_save;
+ 111   1      }
+ 112          
+ 113          
+ 114          void PORT_Init (void)
+ 115          {
+ 116   1         U8 SFRPAGE_save = SFRPAGE;
+ 117   1         SFRPAGE = CONFIG_PAGE;              // Port SFR's on Configuration page
+C51 COMPILER V9.54   MAIN                                                                  04/04/2025 14:56:41 PAGE 3   
+
+ 118   1      
+ 119   1         P0MDOUT |= 0x40;                    // P0.6 (CAN0 TX) is push-pull
+ 120   1         P2MDOUT |= 0x01;                    // P1.3 (LED) is push-pull
+ 121   1      
+ 122   1         XBR0 = 0x02;                        // Enable CAN0 on Crossbar
+ 123   1         XBR2 = 0x40;                        // Enable Crossbar and weak pull-ups
+ 124   1      
+ 125   1         SFRPAGE = SFRPAGE_save;
+ 126   1      }
+ 127          
+ 128          //-----------------------------------------------------------------------------
+ 129          // CAN0_Init
+ 130          //-----------------------------------------------------------------------------
+ 131          
+ 132          void CAN0_Init (void)
+ 133          {
+ 134   1         U8 SFRPAGE_save = SFRPAGE;
+ 135   1         SFRPAGE = CAN0_PAGE;                // All CAN register are on page 0x0C
+ 136   1      
+ 137   1         CAN0CN |= 0x01;                     // Start Intialization mode
+ 138   1      
+ 139   1         //---------Initialize general CAN peripheral settings
+ 140   1      
+ 141   1         CAN0CN |= 0x4E;                     // Enable Status, Error, Module Interrupts,Enable access to bit tim
+             -ing register
+ 142   1      
+ 143   1         // See the CAN Bit Timing Spreadsheet for how to calculate this value
+ 144   1         CAN0BT = 0x1402;                    // Based on 24 Mhz CAN clock, set the // CAN bit rate 1402 to 1 Mbp
+             -s, 1405 to 500k bps
+ 145   1      
+ 146   1         //---------Initialize settings common to all message objects
+ 147   1         // Command Mask Register
+ 148   1         CAN0IF1CM = 0x00F0;                 // Write Operation, Transfer ID Mask, MDir, Transfer ID, Dir, Xtd, 
+             -MsgVal,Transfer Control Bits, Don't set TxRqst or transfer data
+ 149   1      
+ 150   1         // Mask Registers
+ 151   1         CAN0IF1M1 = 0x0000;                 // Mask Bits 15-0 not used for filtering
+ 152   1         CAN0IF1M2 = 0x5FFC;                 // Ignore Extended Identifier for
+ 153   1                                             // filtering
+ 154   1                                             // Used Direction bit for filtering
+ 155   1                                             // Use ID bits 28-18 for filtering
+ 156   1         // Arbitration Registers
+ 157   1         CAN0IF1A1 = 0x0000;                 // 11-bit ID, so lower 16-bits not used
+ 158   1      
+ 159   1         // Message Control Registers
+ 160   1         CAN0IF1MC = 0x0880 | MESSAGE_SIZE;  // Enable Transmit Interrupt
+ 161   1                                             // Message Object is a Single Message
+ 162   1                                             // Message Size set by #define
+ 163   1      
+ 164   1         //---------Initialize unique settings for each valid message object
+ 165   1        CAN0IF1A2 = 0xA000 |(0x31C);                 // MsgVal valid, Direction = transmit, ID = 0
+ 166   1        CAN0IF1CR = 0;                      // Write to Message Object 0
+ 167   1        while (CAN0IF1CRH & 0x80) {}        // Wait for Busy bit to clear
+ 168   1      
+ 169   1         CAN0IF1A2 = 0x0000;              // Set MsgVal = 0 to ignore
+ 170   1         CAN0CN &= ~0x01;                    // Return to Normal Mode (chi xóa bit Init)
+ 171   1         SFRPAGE = SFRPAGE_save;
+ 172   1      }
+ 173          
+ 174          void CAN0_Transmit_Polling(void)
+ 175          {
+ 176   1      
+C51 COMPILER V9.54   MAIN                                                                  04/04/2025 14:56:41 PAGE 4   
+
+ 177   1          U8 SFRPAGE_save = SFRPAGE;
+ 178   1          SFRPAGE = CAN0_PAGE;                // All CAN registers are on page 0x0C
+ 179   1          CAN0IF1DA1L = buffer[0];  // Byte 0
+ 180   1          CAN0IF1DA1H = buffer[1];  // Byte 1
+ 181   1          CAN0IF1DA2L = buffer[2];  // Byte 2
+ 182   1          CAN0IF1DA2H = buffer[3];  // Byte 3
+ 183   1          CAN0IF1DB1L = buffer[4];  // Byte 4
+ 184   1          CAN0IF1DB1H = buffer[5];  // Byte 5
+ 185   1          CAN0IF1DB2L = buffer[6];  // Byte 6
+ 186   1          CAN0IF1DB2H = buffer[7];  // Byte 7
+ 187   1      
+ 188   1          CAN0IF1CM = 0x0087;            // Set Direction to Write
+ 189   1                                                // Write TxRqst, all 8 data bytes
+ 190   1          CAN0IF1CR = 0x00;          // Start command request
+ 191   1          // Wait for command to complete
+ 192   1          while (CAN0IF1CRH & 0x80) {}  // Poll on Busy bit
+ 193   1          // Wait for transmission to complete by polling CAN0STAT
+ 194   1          while (!(CAN0STAT & TxOk))    // Wait until transmission is successful
+ 195   1          {
+ 196   2              if (CAN0STAT & (BOff | LEC))  // Check for bus-off or last error code
+ 197   2              {
+ 198   3                  CAN_ERROR = 1;        // Set error flag
+ 199   3                  LED = 0;              // Turn off LED to indicate error
+ 200   3                  break;                // Exit polling loop on error
+ 201   3              }
+ 202   2          }
+ 203   1          // Update LED status based on transmission result
+ 204   1          if (!CAN_ERROR)
+ 205   1          {
+ 206   2              LED = 1;                  // Turn on LED to indicate success
+ 207   2          }
+ 208   1          else
+ 209   1          {
+ 210   2              LED = 0;                  // Turn off LED if error occurred
+ 211   2          }
+ 212   1          SFRPAGE = SFRPAGE_save;
+ 213   1      }
+ 214          void Timer0_Init(void)
+ 215          {
+ 216   1              
+ 217   1              TMOD &= 0xF0;
+ 218   1              TMOD |= 0x01; // timer 16bit
+ 219   1              CKCON |= 0x02;  // SYSCLK/48 = 500 kHz
+ 220   1              TH0 = (65536 - 500) >> 8;
+ 221   1              TL0 = (655536 -500) & 0xFF;
+ 222   1          ET0 = 1;               
+ 223   1          TR0 = 1;               
+ 224   1      }
+ 225          INTERRUPT(Timer0_ISR, INTERRUPT_TIMER0)
+ 226          {       
+ 227   1              TH0 = (65536 - 500) >> 8;
+ 228   1          TL0 = (65536 - 500) & 0xFF;
+ 229   1      
+ 230   1          timeout_counter++;
+ 231   1      }
+ 232          
+ 233          void delay_ms(unsigned int ms)
+ 234          {
+ 235   1          unsigned long start = timeout_counter;
+ 236   1          while ((timeout_counter - start) < ms);
+ 237   1      }
+ 238          //-----------------------------------------------------------------------------
+C51 COMPILER V9.54   MAIN                                                                  04/04/2025 14:56:41 PAGE 5   
+
+ 239          // Interrupt Service Routines
+ 240          //-----------------------------------------------------------------------------
+ 241          
+ 242          //-----------------------------------------------------------------------------
+ 243          // End Of File
+ 244          //-----------------------------------------------------------------------------
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    350    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     13       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

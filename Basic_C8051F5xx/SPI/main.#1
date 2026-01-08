@@ -1,0 +1,32 @@
+#include<stdio.h>
+#include <compiler_defs.h>
+#include <C8051F580_defs.h>            // SFR declarations
+
+#include "config.h"
+#include "timer.h"
+#include "uart.h"
+#include "spi.h"
+
+#define UART1_BUFFERSIZE 64
+extern SEGMENT_VARIABLE(UART1_Buffer[UART1_BUFFERSIZE], U8, SEG_XDATA);
+
+
+   
+void main(void)
+{
+	U8 i;
+	SFRPAGE = ACTIVE_PAGE;
+	PCA0_Init ();
+    PORT_Init ();
+	SYSCLK_Init ();
+    TIMER2_Init ();
+    UART1_Init ();
+    SPI0_Init ();
+	EA = 1;
+	SFRPAGE = ACTIVE2_PAGE;
+	while(1)
+	{
+		prinf("ok\r\n");
+		Delay_ms(1000);
+	}
+}

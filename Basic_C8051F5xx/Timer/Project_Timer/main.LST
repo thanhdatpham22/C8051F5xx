@@ -1,0 +1,58 @@
+C51 COMPILER V9.54   MAIN                                                                  04/24/2025 13:39:01 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.exe main.c DB OE BR INCDIR(c:\SiLabs\MCU_4\Inc)
+
+line level    source
+
+   1          #include <compiler_defs.h>
+   2          #include <C8051F580_defs.h>
+   3          
+   4          #include "config.h"
+*** WARNING C323 IN LINE 8 OF config.h: newline expected, extra characters found
+   5          #include "Timer_0.h"
+*** WARNING C323 IN LINE 22 OF Timer_0.h: newline expected, extra characters found
+   6          #include "Timer_1.h"
+*** WARNING C323 IN LINE 8 OF Timer_1.h: newline expected, extra characters found
+   7          #include "Timer_2.h"
+*** WARNING C323 IN LINE 5 OF Timer_2.h: newline expected, extra characters found
+   8          #include "Timer_3.h"
+*** WARNING C323 IN LINE 6 OF Timer_3.h: newline expected, extra characters found
+   9          
+  10          SBIT(LEDY, SFR_P2, 0); 
+  11          SBIT(LEDG, SFR_P2, 1); 
+  12          SBIT(LEDD, SFR_P2, 2); 
+  13          
+  14          void main()
+  15          {
+  16   1              WATCH_DOG_Init();
+  17   1              OSCILLATOR_Init();
+  18   1              PORT_Init();
+  19   1              //_CONFIG_TIMER0();
+  20   1              //_CONFIG_TIMER1();
+  21   1              //_CONFIG_TIMER2();
+  22   1              _CONFIG_TIMER3();
+  23   1              EA =1;
+  24   1              while(1)
+  25   1              {
+  26   2                      LEDG= !LEDG;
+  27   2                      delay_t3_us(1000);
+  28   2      
+  29   2              }
+  30   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     29    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  5 WARNING(S),  0 ERROR(S)

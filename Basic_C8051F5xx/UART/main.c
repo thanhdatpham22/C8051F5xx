@@ -1,0 +1,397 @@
+
+//-----------------------------------------------------------------------------
+// Includes
+//-----------------------------------------------------------------------------
+
+#include <compiler_defs.h>
+#include <C8051F580_defs.h>            // SFR declarations
+#include <stdio.h>
+
+//-----------------------------------------------------------------------------
+// Global CONSTANTS
+//-----------------------------------------------------------------------------
+
+#define SYSCLK      24000000           // SYSCLK frequency in Hz
+#define BAUDRATE      115200 		// Baud rate of UART in bps
+
+//---------------SPI_DEFINE-----------------
+
+#define  F_SCK_MAX         2000000     // Max SCK freq (Hz)
+#define  T_NSS_DISABLE_MIN 500         // Min NSS disable time (ns)
+#define  EEPROM_CAPACITY   8        // EEPROM capacity (bytes)
+
+// EEPROM Instruction Set
+#define  EEPROM_CMD_READ   0x03        // Read Command
+#define  EEPROM_CMD_WRITE  0x02        // Write Command
+#define  EEPROM_CMD_WRDI   0x04        // Reset Write Enable Latch Command
+#define  EEPROM_CMD_WREN   0x06        // Set Write Enable Latch Command
+#define  EEPROM_CMD_RDSR   0x05        // Read Status Register Command
+#define  EEPROM_CMD_WRSR   0x01        // Write Status Register Command
+
+
+
+
+
+SBIT (LEDY, SFR_P2, 0);                 
+SBIT (LEDG, SFR_P2, 1);
+
+
+volatile unsigned long timeout_counter = 0;
+
+
+//--------------spi_d
+
+//-----------------------------------------------------------------------------
+// Function PROTOTYPES
+//-----------------------------------------------------------------------------
+
+void SYSCLK_Init (void);
+void UART1_Init (void);
+void PORT_Init (void);
+void SPI0_Init (void);
+void EEPROM_Write (U16 address, U8 value);
+U8 EEPROM_Read (U16 address);
+
+
+void delay_ms(unsigned int ms);
+void Delay_us (U8 time_us);
+void Timer0_Init(void);
+void TIMER2_Init (void);
+
+
+
+//-----------------------------------------------------------------------------
+// MAIN Routine
+//-----------------------------------------------------------------------------
+
+void main (void)
+{
+
+   SFRPAGE = ACTIVE_PAGE;
+
+   PCA0MD &= ~0x40;                    // Disable watchdog timer
+   PORT_Init();                        // Initialize Port I/O
+   SYSCLK_Init ();                     
+   UART1_Init();
+   Timer0_Init();
+   EA =1;
+   SFRPAGE = ACTIVE2_PAGE;             // Switch page for UART1 communication
+
+   while (1)
+   {	U16 address;
+   		U8 test_byte;
+
+        //printf("Hello World\r\n");
+		//LEDY = ! LEDY;
+		//delay_ms(1000);
+		LEDY = 1;
+		printf("Filling with 0xFF's...\n");
+		for (address = 0; address < EEPROM_CAPACITY; address++)
+   		{
+      		test_byte = 0xFF;
+			//printf("Ok1");
+      		EEPROM_Write (address, test_byte);
+			//printf("Ok2");		
+	        // Print status to UART0
+	        if ((address % 16) == 0)
+	        {
+	          	printf ("\nWriting 0x%04x: %02x \r\n", address, (U16)test_byte);
+	         	LEDY = !LEDY;
+	      	}
+	     	else 
+	      	{
+	         	printf ("%02x ", (U16)test_byte); 
+	      	}
+   		}
+		// Verify EEPROM with 0xFF's
+	   	printf("\n\nVerifying 0xFF's...\n");
+	    for (address = 0; address < EEPROM_CAPACITY; address++)
+	    {
+	      	test_byte = EEPROM_Read (address);
+
+	      // Print status to UART0
+	      	if ((address % 16) == 0)
+	      	{	
+	         	printf ("\nVerifying 0x%04x: %02x ", address, (U16)test_byte);
+	         	LEDY = !LEDY;
+	      	}
+	      	else
+	      	{
+	         	printf ("%02x ", (U16)test_byte);
+	      	}
+
+	      	if (test_byte != 0xFF)
+	      	{
+	         	LEDY = 0;
+	         	printf ("\nError at %u", address);
+	         	while (1);                    // Stop here on error (for debugging)
+	      	}
+	   	}
+
+   	}
+	while (1)                           // Loop forever
+   {
+      LEDY = !LEDY;                      // Flash LED when done (all verified)
+      delay_ms (1000);
+   }
+   
+}
+
+
+//-----------------------------------------------------------------------------
+// PORT_Init
+//-----------------------------------------------------------------------------
+
+void PORT_Init (void)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = CONFIG_PAGE;
+	
+	P0MDOUT   = 0x34;
+    P0SKIP    = 0xC3;
+
+    P1MDOUT |= 0x08;                    // Enable UART1 TX as push-pull output
+    P0SKIP  = 0xFF;                     // Skip to P0, and P1.1,2,3
+	P1SKIP = 0xE7;						// Enable UART1 on P1.3(TX) and P1.4(RX)
+
+	P2MDOUT |= 0x03;                    // Enable LED as a push-pull output
+    P2SKIP  |= 0xFC;
+	
+	//XBR0      = 0x04;
+    XBR2    = 0x42;                     
+                                       // Enable crossbar and weak pull-ups
+    SFRPAGE = SFRPAGE_save;
+}
+
+//-----------------------------------------------------------------------------
+// SYSCLK_Init
+//-----------------------------------------------------------------------------
+
+void SYSCLK_Init (void)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = CONFIG_PAGE;
+
+   OSCICN |= 0x87;                     // Configure internal oscillator for
+                                       // its maximum frequency
+   RSTSRC  = 0x04;                     // Enable missing clock detector
+
+   SFRPAGE = SFRPAGE_save;
+}
+void Timer0_Init(void)
+{
+	
+	TMOD &= 0xF0;
+	TMOD |= 0x01; // timer 16bit
+	CKCON |= 0x02;  // SYSCLK/48 = 500 kHz
+	TH0 = (65536 - 500) >> 8;
+	TL0 = (655536 -500) & 0xFF;
+    ET0 = 1;               
+    TR0 = 1;               
+}
+
+INTERRUPT(Timer0_ISR, INTERRUPT_TIMER0)
+{	
+	TH0 = (65536 - 500) >> 8;
+    TL0 = (65536 - 500) & 0xFF;
+
+    timeout_counter++;
+}
+//-----------------------------------------------------------------------------
+// UART1_Init
+//-----------------------------------------------------------------------------
+
+void UART1_Init (void)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE2_PAGE;
+
+   SCON1 = 0x10;                       // SCON1: 8-bit variable bit rate
+
+   if (SYSCLK / BAUDRATE / 2 / 256 < 1) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2);
+      CKCON &= ~0x0B;                  // T1M = 1; SCA1:0 = xx
+      CKCON |=  0x08;
+   } 
+   else if (SYSCLK / BAUDRATE / 2 / 256 < 4) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 4);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 01
+      CKCON |=  0x01;
+   } 
+   else if (SYSCLK / BAUDRATE / 2 / 256 < 12) 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 12);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 00
+   } 
+   else 
+   {
+      TH1 = -(SYSCLK / BAUDRATE / 2 / 48);
+      CKCON &= ~0x0B;                  // T1M = 0; SCA1:0 = 10
+      CKCON |=  0x02;
+   }
+
+    TL1 = TH1;                          // Init Timer1
+    TMOD &= ~0xF0;                      // TMOD: timer 1 in 8-bit autoreload
+    TMOD |=  0x20;
+    TR1 = 1;                            // START Timer1
+
+    TI1 = 1;                            // Indicate TX0 ready (SCON1)
+	//EIE2 |= 0x08;
+    SFRPAGE = SFRPAGE_save;
+}
+void TIMER2_Init(void)
+{
+   // CKCON is available on all pages
+
+   CKCON    |= 0x10;
+}
+
+
+
+void delay_ms(unsigned int ms)
+{
+    unsigned long start = timeout_counter;
+    while ((timeout_counter - start) < ms);
+}
+
+void Delay_us (U8 time_us)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   TR2   = 0;                          // Stop timer
+   TF2H  = 0;                          // Clear timer overflow flag
+   TMR2  = -((U16)(SYSCLK / 1000000) * (U16)(time_us));
+   TR2   = 1;                          // Start timer
+   while (!TF2H);                      // Wait till timer overflow occurs
+   TR2   = 0;                          // Stop timer
+
+   SFRPAGE = SFRPAGE_save;
+}
+
+void SPI0_Init()
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   SPI0CFG   = 0x40;                   // Enable the SPI as a Master
+                                       // CKPHA = '0', CKPOL = '0'
+
+   SPI0CN    = 0x8D;                   // 4-wire, single master mode
+                                       // SPI0 enable
+
+   // The equation for SPI0CKR is (SYSCLK/(2*F_SCK_MAX))-1, but this yields
+   // a SPI frequency that is slightly more than 2 MHz. But, 2 MHz is the max
+   // frequency spec of the EEPROM used here. So, the "-1" term is omitted
+   // in the following usage:
+   SPI0CKR   = (SYSCLK / (2 * F_SCK_MAX));
+
+   SFRPAGE = SFRPAGE_save;
+}
+
+void EEPROM_Write (U16 address, U8 value)
+{
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   // Writing a byte to the EEPROM is a five-step operation.
+
+   // Step1: Set the Write Enable Latch to 1
+   NSSMD0   = 0;                       // Step1.1: Activate Slave Select
+   SPI0DAT  = EEPROM_CMD_WREN;         // Step1.2: Send the WREN command
+   while (!SPIF);                      // Step1.3: Wait for end of transfer
+   SPIF     = 0;                       // Step1.4: Clear the SPI intr. flag
+   NSSMD0   = 1;                       // Step1.5: Deactivate Slave Select
+   Delay_us (1);                       // Step1.6: Wait for at least
+                                       //          T_NSS_DISABLE_MIN
+   // Step2: Send the WRITE command
+   NSSMD0   = 0;
+   SPI0DAT  = EEPROM_CMD_WRITE;
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step3: Send the EEPROM destination address (MSB first)
+   SPI0DAT  = (U8)((address >> 8) & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+   SPI0DAT  = (U8)(address & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step4: Send the value to write
+   SPI0DAT  = value;
+   while (!SPIF);
+   SPIF     = 0;
+   NSSMD0   = 1;
+   Delay_us (1);
+
+   // Step5: Poll on the Write In Progress (WIP) bit in Read Status Register
+   do
+   {
+      NSSMD0   = 0;                    // Activate Slave Select
+      SPI0DAT  = EEPROM_CMD_RDSR;      // Send the Read Status Register command
+      while (!SPIF);                   // Wait for the command to be sent out
+      SPIF     = 0;
+      SPI0DAT  = 0;                    // Dummy write to output serial clock
+      while (!SPIF);                   // Wait for the register to be read
+      SPIF     = 0;
+      NSSMD0   = 1;                    // Deactivate Slave Select after read
+      Delay_us (1);
+   } while((SPI0DAT & 0x01) == 0x01);
+
+   SFRPAGE = SFRPAGE_save;
+}
+
+//-----------------------------------------------------------------------------
+// EEPROM_Read
+//-----------------------------------------------------------------------------
+//
+// Return Value : The value that was read from the EEPROM
+//                   range: 0x00 to 0xFF
+// Parameters   : 1. address - the source EEPROM address.
+//                   range: 0 to EEPROM_CAPACITY
+//
+// Reads one byte from the specified EEPROM address.
+//
+//-----------------------------------------------------------------------------
+U8 EEPROM_Read (U16 address)
+{
+   U8 spi_data;
+
+   U8 SFRPAGE_save = SFRPAGE;
+   SFRPAGE = ACTIVE_PAGE;
+
+   // Reading a byte from the EEPROM is a three-step operation.
+
+   // Step1: Send the READ command
+   NSSMD0   = 0;                       // Activate Slave Select
+   SPI0DAT  = EEPROM_CMD_READ;
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step2: Send the EEPROM source address (MSB first)
+   SPI0DAT  = (U8)((address >> 8) & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+   SPI0DAT  = (U8)(address & 0x00FF);
+   while (!SPIF);
+   SPIF     = 0;
+
+   // Step3: Read the value returned
+   SPI0DAT  = 0;                       // Dummy write to output serial clock
+   while (!SPIF);                      // Wait for the value to be read
+   SPIF     = 0;
+   NSSMD0   = 1;                       // Deactivate Slave Select
+   Delay_us (1);
+
+   spi_data = SPI0DAT;                 // Read data before restoring SFR page
+
+   SFRPAGE = SFRPAGE_save;
+
+   return spi_data;
+}
+//-----------------------------------------------------------------------------
+// End Of File
+//-----------------------------------------------------------------------------
